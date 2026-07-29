@@ -1,0 +1,11 @@
+const { Signup, Login, Logout,verifyEmail,resetPassword,changePassword,verifyOtp } = require("../controllers/authController.js");
+const express = require("express");
+const router = express.Router();
+router.post("/signup", Signup);
+router.post("/login", Login);
+router.post("/logout", Logout);
+router.post("/verify-email",verifyEmail);
+router.post("/change-password",changePassword);
+router.post("/reset-password",resetPassword);
+router.post("/verifyOtp",verifyOtp);
+module.exports = router;
