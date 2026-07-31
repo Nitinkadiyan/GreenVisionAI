@@ -168,7 +168,7 @@ const resetPassword = async (req, res) => {
 };
 const verifyOtp = async (req, res) => {
   try {
-    const { email,otp } = req.body;
+    const { email, otp } = req.body;
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({
@@ -198,7 +198,8 @@ const verifyOtp = async (req, res) => {
       success: true,
     });
   } catch (error) {
-    console.log(error);R
+    console.log(error);
+    R;
     message: err.message;
   }
 };
@@ -246,6 +247,27 @@ const Logout = async (req, res) => {
     message: "Logged Out Successfully",
   });
 };
+const getUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if(!user){
+      return res.json({
+        success:false,
+        message:"User not existing",
+      })
+    }
+    return res.status(201).json({
+      success:true,
+      user,
+    })
+  } catch (error) {
+    console.log(error);
+    return res.json({
+      status: false,
+      message: error.message,
+    });
+  }
+};
 module.exports = {
   Signup,
   Login,
@@ -254,4 +276,5 @@ module.exports = {
   changePassword,
   resetPassword,
   verifyOtp,
+  getUser,
 };
