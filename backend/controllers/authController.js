@@ -250,20 +250,80 @@ const Logout = async (req, res) => {
 const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
-    if(!user){
+    if (!user) {
       return res.json({
-        success:false,
-        message:"User not existing",
-      })
+        success: false,
+        message: "User not existing",
+      });
     }
     return res.status(201).json({
-      success:true,
+      success: true,
       user,
-    })
+    });
   } catch (error) {
     console.log(error);
     return res.json({
       status: false,
+      message: error.message,
+    });
+  }
+};
+const updateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    const { name, email } = req.body;
+    await User.updateOne(
+      {
+        email,
+      },
+      {
+        $set: {
+          name: name,
+          email: email,
+        },
+      },
+    );
+    return res.status(201).json({
+      success: true,
+      message: "User Updated Successfully",
+      user,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      status: false,
+      message: err.message,
+    });
+  }
+};
+const deleteUser = async (req, res) => {
+  try {
+    const user = User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(404).json({
+        status: false,
+        message: "User not found",
+      });
+    }
+    await User.findByIdAndDelete(req.user.id);
+    res.clearCookie("token", {
+      httpOnly: true,
+      sameSite: "lax",
+    });
+    return res.status(201).json({
+      success: true,
+      message: "User Deleted SuccessFully",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
       message: error.message,
     });
   }
@@ -277,4 +337,5 @@ module.exports = {
   resetPassword,
   verifyOtp,
   getUser,
+  updateUser,
 };
