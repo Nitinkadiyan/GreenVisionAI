@@ -5,6 +5,7 @@ const otpTemplate = require("../templates/otpTemplate");
 const sendEmail = require("../utils/sendEmail.js");
 const Signup = async (req, res) => {
   try {
+    console.log(req.body);
     const { email, password, username, createdAt } = req.body;
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -52,9 +53,9 @@ const Login = async (req, res) => {
         message: "Incomplete fields",
       });
     }
-    console.log(password);
 
     const user = await User.findOne({ email });
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -62,7 +63,9 @@ const Login = async (req, res) => {
       });
     }
     console.log(user.password);
+    console.log(password);
     const auth = await bcrypt.compare(password, user.password);
+    console.log(auth);
     if (!auth) {
       return res.json({
         message: "incorrect password",
