@@ -35,7 +35,7 @@ const Signup = async (req, res) => {
       withCredentials: true,
       httpOnly: false,
     });
-    res.status(201).json({
+    return res.status(201).json({
       message: "User signed in successfully",
       success: true,
       user,
@@ -76,7 +76,7 @@ const Login = async (req, res) => {
       withCredentials: true,
       httpOnly: false,
     });
-    res.status(201).json({
+    return res.status(201).json({
       message: "User LoggedIn Successfully",
       success: true,
     });

@@ -30,9 +30,15 @@ const userSchema = new mongoose.Schema({
   otpExpiry:Date,
 });
 userSchema.pre("save", async function () {
+    console.log("Pre-save hook running");
+    console.log("Before:", this.password);
 
+    if (!this.isModified("password")) return;
 
     this.password = await bcrypt.hash(this.password, 12);
+
+    console.log("After:", this.password);
+
     
 });
 module.exports = mongoose.model("User", userSchema);
