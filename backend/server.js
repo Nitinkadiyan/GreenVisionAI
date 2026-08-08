@@ -21,6 +21,7 @@ app.use(
 );
 app.use("/", authRoutes);
 app.use("/reports",reportRoutes);
+app.use("/api/v1/vision",visionRoutes);
 app.listen(process.env.PORT, () => {
   console.log("Server is listening on port 3000");
 });
