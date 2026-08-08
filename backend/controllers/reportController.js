@@ -1,6 +1,7 @@
 const Report = require("../models/Report.js");
 const cloudinary = require("../utils/cloudinary.js");
 const fs = require("fs");
+const analyzeImage = require("../services/VisionService.js");
 const createReport = async (req, res) => {
   try {
     const { description, longitude, latitude } = req.body;
@@ -16,6 +17,8 @@ const createReport = async (req, res) => {
         message: "Image is required",
       });
     }
+    console.log(req.file);
+    const result = await analyzeImage(req.file);
     const uploadedImage = await cloudinary.uploader.upload(req.file.path);
     await Report.create({
       userId: req.user.id,
@@ -26,6 +29,8 @@ const createReport = async (req, res) => {
       },
       imageUrl: uploadedImage.secure_url,
       imagePublicId: uploadedImage.public_id,
+      aiAnalysis: result,
+      status: "Pending Review",
     });
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
@@ -33,6 +38,7 @@ const createReport = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Report created successfully!",
+      data: result,
     });
   } catch (e) {
     console.log(e);

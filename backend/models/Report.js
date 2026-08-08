@@ -38,6 +38,33 @@ const reportSchema = new mongoose.Schema(
         "Resolved",
       ],
     },
+    aiAnalysis: {
+      wasteType: {
+        type: String,
+      },
+      confidence: {
+        type: Number,
+      },
+      severity: {
+        type: String,
+        enum: ["Low", "Medium", "High", "Critical"],
+      },
+      estimateWasteKg: {
+        type: Number,
+      },
+      environmentalRisk: {
+        type: String,
+      },
+      possibleAction: {
+        type: String,
+      },
+      suggestedAuthority: {
+        type: String,
+      },
+      summary: {
+        type: String,
+      },
+    },
   },
   {
     timestamps: true,
