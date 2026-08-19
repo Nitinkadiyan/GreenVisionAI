@@ -31,7 +31,7 @@ const reportSchema = new mongoose.Schema(
       enum: [
         "Pending Review",
         "Approved",
-        "Assignmed",
+        "Assigned",
         "Rejected",
         "In Progress",
         "Escalated",

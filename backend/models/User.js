@@ -18,27 +18,30 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: new Date(),
   },
-  isVerified:{
-    type:Boolean,
-    default:false,
+  role: {
+    type: String,
+    enum: ["citizen", "government"],
+    default: "citizen",
   },
-  resetVerified:{
-    type:Boolean,
-    default:false,
+  isVerified: {
+    type: Boolean,
+    default: false,
   },
-  otp:String,
-  otpExpiry:Date,
+  resetVerified: {
+    type: Boolean,
+    default: false,
+  },
+  otp: String,
+  otpExpiry: Date,
 });
 userSchema.pre("save", async function () {
-    console.log("Pre-save hook running");
-    console.log("Before:", this.password);
+  console.log("Pre-save hook running");
+  console.log("Before:", this.password);
 
-    if (!this.isModified("password")) return;
+  if (!this.isModified("password")) return;
 
-    this.password = await bcrypt.hash(this.password, 12);
+  this.password = await bcrypt.hash(this.password, 12);
 
-    console.log("After:", this.password);
-
-    
+  console.log("After:", this.password);
 });
 module.exports = mongoose.model("User", userSchema);
