@@ -9,13 +9,16 @@ const {
   deleteReport,
 } = require("../controllers/reportController.js");
 const { verifyToken } = require("../middleware/authMiddleware.js");
-const { upload } = require("../middleware/multer.js");
+const  upload  = require("../middleware/multer.js");
 
 router.post(
   "/create-report",
   verifyToken,
   authorizeRoles("citizen"),
-  upload.single("imageUrl"),
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "video", maxCount: 1 }
+  ]),
   createReport,
 );
 

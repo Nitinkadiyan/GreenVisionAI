@@ -1,6 +1,7 @@
 const cleanupTask = require("../models/cleanupTask");
 const CleanupTask = require("../models/cleanupTask");
 const Report = require("../models/Report");
+const { analyzeCleanup } = require("../services/VisionService");
 const createCleanupTask = async (req, res) => {
   try {
     const { report, reward, guideline, deadline } = req.body;
@@ -283,7 +284,62 @@ const submitCleanupCompletion = async (req, res) => {
         message: "Completion description is required",
       });
     }
-    cleanupTask.completion.description = description;
+    const beforeImage = req.files?.beforeImage?.[0];
+    const afterImage = req.files?.afterImage?.[0];
+
+    if (!beforeImage || !afterImage) {
+      return res.status(400).json({
+        success: false,
+        message: "Both before and after images are required",
+      });
+    }
+
+    const report = await Report.findById(cleanupTask.report);
+
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Original report not found",
+      });
+    }
+    console.log(report);
+    const analysis = report.aiAnalysis;
+    console.log("beforeImage");
+    console.log(beforeImage);
+    // console.log(afterImage);
+    const aiResult = await analyzeCleanup({
+      beforeImage,
+      afterImage,
+      description,
+      analysis,
+    });
+    console.log(aiResult);
+    cleanupTask.completion = {
+      beforeImageUrl: beforeImage.path,
+      beforeImagePublicId: beforeImage.filename,
+
+      afterImageUrl: afterImage.path,
+      afterImagePublicId: afterImage.filename,
+
+      description: description.trim(),
+
+      submittedAt: new Date(),
+    };
+
+    // 9. Save AI result
+     const aiVerification = {
+      verified: aiResult.verified,
+      confidence: aiResult.confidence,
+      cleanupQuality: aiResult.cleanupQuality,
+      sameLocation: aiResult.sameLocation,
+      wasteReduced: aiResult.wasteReduced,
+      remainingWaste: aiResult.remainingWaste,
+      evidenceMatchesDescription: aiResult.evidenceMatchesDescription,
+      summary: aiResult.summary,
+      recommendation: aiResult.recommendation,
+      verifiedAt: new Date(),
+    };
+    console.log(aiVerification);
     cleanupTask.status = "completion-submitted";
     await cleanupTask.save();
     return res.status(200).json({

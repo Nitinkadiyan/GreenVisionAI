@@ -45,20 +45,58 @@ const cleanupTaskSchema = new mongoose.Schema(
         type: String,
         default: null,
       },
+      beforeImagePublicId: {
+        type: String,
+      },
       afterImageUrl: {
         type: String,
         default: null,
       },
-      description:{
-        type:String,
-        default:null,
+      afterImagePublicId: {
+        type: String,
       },
-      submittedAt:{
-        type:Date,
-        default:null,
-      }
+      description: {
+        type: String,
+        default: null,
+      },
+      submittedAt: {
+        type: Date,
+        default: null,
+      },
+      aiVerification: {
+        verified: {
+          type: String,
+        },
+        confidence: {
+          type: String,
+        },
+        cleanupQuality: {
+          type: String,
+        },
+        sameLocation: {
+          type: String,
+        },
+        wasteReduced: {
+          type: String,
+        },
+        remainingWaste: {
+          type: String,
+        },
+        evidenceMatchesDescription: {
+          type: String,
+        },
+        summary: {
+          type: String,
+        },
+        recommendation: {
+          type: String,
+        },
+        verifiedAt: {
+          type: Date,
+        },
+      },
     },
-  },
+  },     
   {
     timestamps: true,
   },

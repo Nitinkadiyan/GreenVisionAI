@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const  upload  = require("../middleware/multer.js");
 const { authorizeRoles } = require("../middleware/authorizeRole");
 const {
   createCleanupTask,
@@ -61,6 +62,10 @@ router.patch(
   "/:id/submit-completed-task",
   verifyToken,
   authorizeRoles("citizen"),
+  upload.fields([
+    { name: "beforeImage", maxCount: 1 },
+    { name: "afterImage", maxCount: 1 },
+  ]),
   submitCleanupCompletion,
 );
 
