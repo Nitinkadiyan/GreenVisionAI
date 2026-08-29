@@ -10,7 +10,46 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  phone: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  location: {
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    area: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    address: {
+      type: String,
+      trim: true,
+    },
+    latitude: {
+      type: Number,
+    },
+    longitude: {
+      type: Number,
+    },
+  },
+  profilePicture: {
+    url: {
+      type: String,
+    },
+    publicId: {
+      type: String,
+    },
+  },
   password: {
+    type: String,
+    required: true,
+  },
+  confirmPassword: {
     type: String,
     required: true,
   },
@@ -22,6 +61,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ["citizen", "government"],
     default: "citizen",
+    required: true,
+  },
+  accessCode: {
+    type: String, 
+    trim: true,
   },
   isVerified: {
     type: Boolean,

@@ -40,7 +40,7 @@ const perks = [
 const roles = [
   { id: "citizen", label: "Citizen"  },
   { id: "government", label: "Government Officer"  },
-  { id: "ngo", label: "NGO / Volunteer" },
+  
 ];
 
 function GoogleIcon({ className = "" }) {
@@ -293,7 +293,7 @@ export default function Login() {
                         type="button"
                         aria-pressed={active}
                         onClick={() => setRole(r.id)}
-                        className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 sm:flex-col sm:items-start ${
+                        className={`flex justify-around align-middle justify-items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 sm:flex-col sm:items-start ${
                           active
                             ? "border-primary bg-primary/10 text-primary shadow-soft"
                             : "border-border bg-card/70 text-muted-foreground hover:border-primary/30"
@@ -321,13 +321,13 @@ export default function Login() {
               >
                 {loading ? (
                   <>
-                    {/* <Loader2 className="h-4 w-4 animate-spin" /> */}
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     Signing in…
                   </>
                 ) : (
                   <>
                     Login
-                    {/* <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" /> */}
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                   </>
                 )}
               </button>

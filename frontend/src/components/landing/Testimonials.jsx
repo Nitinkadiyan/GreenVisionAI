@@ -25,7 +25,7 @@ const items = [
 export default function Testimonials() {
   return (
     <section className="py-24">
-      <div className="mx-auto max-w-[1280px] px-6">
+      <div className="mx-auto max-w-7xl px-6">
         <Reveal className="max-w-2xl">
           <p className="text-xs font-semibold tracking-[0.18em] text-primary uppercase">
             Testimonials
