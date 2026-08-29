@@ -12,6 +12,7 @@ const verifyToken = async (req, res,next) => {
     const decoded = jwt.verify(token, process.env.TOKEN_KEY_SECRET);
     req.user = {
       id: decoded.id,
+      role:decoded.role,
     };
     console.log(req.user);
     next();

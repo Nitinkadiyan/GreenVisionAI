@@ -31,12 +31,39 @@ const reportSchema = new mongoose.Schema(
       enum: [
         "Pending Review",
         "Approved",
-        "Assignmed",
+        "Assigned",
         "Rejected",
         "In Progress",
         "Escalated",
         "Resolved",
       ],
+    },
+    aiAnalysis: {
+      wasteType: {
+        type: String,
+      },
+      confidence: {
+        type: Number,
+      },
+      severity: {
+        type: String,
+        enum: ["Low", "Medium", "High", "Critical"],
+      },
+      estimateWasteKg: {
+        type: Number,
+      },
+      environmentalRisk: {
+        type: String,
+      },
+      possibleAction: {
+        type: String,
+      },
+      suggestedAuthority: {
+        type: String,
+      },
+      summary: {
+        type: String,
+      },
     },
   },
   {

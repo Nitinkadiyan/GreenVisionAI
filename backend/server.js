@@ -3,18 +3,16 @@ const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-
+const connectDb = require("./config/db.js");
 const authRoutes = require("./routes/authRoutes");
 require("dotenv").config();
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-
-mongoose
-  .connect(process.env.MONGO_URL)
-  .then(() => console.log("MongoDB is  connected successfully"))
-  .catch((err) => console.error(err));
-
+const reportRoutes = require("./routes/reportRoutes.js");
+const cleanupRoutes = require("./routes/cleanupRoutes.js");
+connectDb();
 app.use(
   cors({
     origin: ["http://localhost:4000"],
@@ -22,7 +20,9 @@ app.use(
     credentials: true,
   }),
 );
-app.use("/",authRoutes);
+app.use("/", authRoutes);
+app.use("/reports",reportRoutes);
+app.use("/volunteer",cleanupRoutes);
 app.listen(process.env.PORT, () => {
   console.log("Server is listening on port 3000");
 });

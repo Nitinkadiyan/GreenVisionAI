@@ -5,7 +5,8 @@ const otpTemplate = require("../templates/otpTemplate");
 const sendEmail = require("../utils/sendEmail.js");
 const Signup = async (req, res) => {
   try {
-    const { email, password, username, createdAt } = req.body;
+    console.log(req.body);
+    const { email, password, username, createdAt, role } = req.body;
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.json({ message: "User already exists" });
@@ -20,6 +21,7 @@ const Signup = async (req, res) => {
       password,
       username,
       otp,
+      role,
       otpExpiry,
       isVerified: false,
       createdAt,
@@ -29,12 +31,12 @@ const Signup = async (req, res) => {
 
     await sendEmail(user.email, "Verify Your Email", html);
 
-    const token = createSecretToken(user._id);
+    const token = createSecretToken(user._id, user.role);
     res.cookie("token", token, {
       withCredentials: true,
       httpOnly: false,
     });
-    res.status(201).json({
+    return res.status(201).json({
       message: "User signed in successfully",
       success: true,
       user,
@@ -45,16 +47,16 @@ const Signup = async (req, res) => {
 };
 const Login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
     if (!email || !password) {
       return res.json({
         success: false,
         message: "Incomplete fields",
       });
     }
-    console.log(password);
 
     const user = await User.findOne({ email });
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -62,20 +64,23 @@ const Login = async (req, res) => {
       });
     }
     console.log(user.password);
+    console.log(password);
     const auth = await bcrypt.compare(password, user.password);
+    console.log(auth);
     if (!auth) {
       return res.json({
         message: "incorrect password",
       });
     }
-    const token = createSecretToken(user._id);
+    const token = createSecretToken(user._id, user.role);
     res.cookie("token", token, {
       withCredentials: true,
       httpOnly: false,
     });
-    res.status(201).json({
+    return res.status(201).json({
       message: "User LoggedIn Successfully",
       success: true,
+      user,
     });
   } catch (err) {
     console.log(err);
@@ -250,20 +255,80 @@ const Logout = async (req, res) => {
 const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
-    if(!user){
+    if (!user) {
       return res.json({
-        success:false,
-        message:"User not existing",
-      })
+        success: false,
+        message: "User not existing",
+      });
     }
     return res.status(201).json({
-      success:true,
+      success: true,
       user,
-    })
+    });
   } catch (error) {
     console.log(error);
     return res.json({
       status: false,
+      message: error.message,
+    });
+  }
+};
+const updateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    const { name, email } = req.body;
+    await User.updateOne(
+      {
+        email,
+      },
+      {
+        $set: {
+          name: name,
+          email: email,
+        },
+      },
+    );
+    return res.status(201).json({
+      success: true,
+      message: "User Updated Successfully",
+      user,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      status: false,
+      message: err.message,
+    });
+  }
+};
+const deleteUser = async (req, res) => {
+  try {
+    const user = User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(404).json({
+        status: false,
+        message: "User not found",
+      });
+    }
+    await User.findByIdAndDelete(req.user.id);
+    res.clearCookie("token", {
+      httpOnly: true,
+      sameSite: "lax",
+    });
+    return res.status(201).json({
+      success: true,
+      message: "User Deleted SuccessFully",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
       message: error.message,
     });
   }
@@ -277,4 +342,5 @@ module.exports = {
   resetPassword,
   verifyOtp,
   getUser,
+  updateUser,
 };

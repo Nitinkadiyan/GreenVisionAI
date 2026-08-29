@@ -1,6 +1,8 @@
 const Report = require("../models/Report.js");
 const cloudinary = require("../utils/cloudinary.js");
 const fs = require("fs");
+const { analyzeImage } = require("../services/VisionService.js");
+const { report } = require("process");
 const createReport = async (req, res) => {
   try {
     const { description, longitude, latitude } = req.body;
@@ -10,14 +12,25 @@ const createReport = async (req, res) => {
         message: "Description is required!",
       });
     }
-    if (!req.file) {
+    // console.log(req.file);
+    // console.log("nikku");
+    // console.log(req.files.image);
+    if (!req.files) {
       return res.status(400).json({
         success: false,
         message: "Image is required",
       });
     }
-    const uploadedImage = await cloudinary.uploader.upload(req.file.path);
-    await Report.create({
+    // console.log(req.files);
+    // console.log(req.files.image);
+    console.log("nikku");
+    const image = req.files?.image?.[0];
+    console.log(image);
+    const result = await analyzeImage(image);
+    const uploadedImage = await cloudinary.uploader.upload(image.path);
+    console.log("before result");
+    console.log(result);
+    const report = await Report.create({
       userId: req.user.id,
       description: description,
       location: {
@@ -26,13 +39,16 @@ const createReport = async (req, res) => {
       },
       imageUrl: uploadedImage.secure_url,
       imagePublicId: uploadedImage.public_id,
+      aiAnalysis: result,
+      status: "Pending Review",
     });
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
+    // if (req.file && fs.existsSync(req.file.path)) {
+    //   fs.unlinkSync(req.file.path);
+    // }
     return res.status(200).json({
       success: true,
       message: "Report created successfully!",
+      data: report,
     });
   } catch (e) {
     console.log(e);

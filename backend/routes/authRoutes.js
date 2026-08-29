@@ -1,4 +1,4 @@
-const { Signup, Login, Logout,verifyEmail,resetPassword,changePassword,verifyOtp,getUser } = require("../controllers/authController.js");
+const { Signup, Login, Logout,verifyEmail,resetPassword,changePassword,verifyOtp,getUser,updateUser } = require("../controllers/authController.js");
 const express = require("express");
 const {verifyToken} = require("../middleware/authMiddleware.js");
 const router = express.Router();
@@ -10,4 +10,5 @@ router.post("/verify-email",verifyEmail);
 router.post("/change-password",changePassword);
 router.post("/reset-password",resetPassword);
 router.post("/verifyOtp",verifyOtp);
+router.patch("/update-user",verifyToken,updateUser);
 module.exports = router;
