@@ -11,6 +11,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 const reportRoutes = require("./routes/reportRoutes.js");
+const governmentRoutes = require("./routes/GovernmentRoutes.js");
 connectDb();
 app.use(
   cors({
@@ -20,7 +21,8 @@ app.use(
   }),
 );
 app.use("/", authRoutes);
-app.use("/reports",reportRoutes);
+app.use("/reports", reportRoutes);
+app.use("/government", governmentRoutes);
 app.listen(process.env.PORT, () => {
-  console.log("Server is listening on port 3000");
+  console.log(`Server is listening on port ${process.env.PORT}`);
 });

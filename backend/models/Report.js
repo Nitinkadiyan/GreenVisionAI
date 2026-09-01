@@ -31,12 +31,64 @@ const reportSchema = new mongoose.Schema(
       enum: [
         "Pending Review",
         "Approved",
-        "Assignmed",
+        "Assigned",
         "Rejected",
         "In Progress",
         "Escalated",
         "Resolved",
       ],
+    },
+    priority: {
+      type: String,
+      enum: ["Low", "Medium", "High", "Critical"],
+      default: "Medium",
+    },
+    deadline: {
+      type: Date,
+    },
+    assignedDepartment: {
+      type: String,
+    },
+
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
+    assignedAt: {
+      type: Date,
+    },
+    rewardAmount: {
+      type: Number,
+      default: 0,
+    },
+    rejectionReason: {
+      type: String,
+    },
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    approvedAt: {
+      type: Date,
+    },
+    escalated: {
+      type: Boolean,
+      default: false,
+    },
+    escalatedTo: {
+      type: String,
+    },
+    escalateReason: {
+      type: String,
+    },
+    escalatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
+    escalatedAt: {
+      type: Date,
     },
   },
   {
