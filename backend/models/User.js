@@ -10,13 +10,56 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  phone: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  location: {
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    area: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    address: {
+      type: String,
+      trim: true,
+    },
+    latitude: {
+      type: Number,
+    },
+    longitude: {
+      type: Number,
+    },
+  },
+  profilePicture: {
+    url: {
+      type: String,
+    },
+    publicId: {
+      type: String,
+    },
+  },
   password: {
+    type: String,
+    required: true,
+  },
+  confirmPassword: {
     type: String,
     required: true,
   },
   createdAt: {
     type: Date,
     default: new Date(),
+  },
+  accessCode: {
+    type: String, 
+    trim: true,
   },
   isVerified: {
     type: Boolean,
@@ -26,13 +69,14 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  otp: String,
-  otpExpiry: Date,
   role: {
     type: String,
     enum: ["Government", "User", "Admin"],
     default: "User",
   },
+  },
+  otp: String,
+  otpExpiry: Date,
 });
 userSchema.pre("save", async function () {
   console.log("Pre-save hook running");

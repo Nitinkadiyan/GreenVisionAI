@@ -89,6 +89,32 @@ const reportSchema = new mongoose.Schema(
 
     escalatedAt: {
       type: Date,
+    aiAnalysis: {
+      wasteType: {
+        type: String,
+      },
+      confidence: {
+        type: Number,
+      },
+      severity: {
+        type: String,
+        enum: ["Low", "Medium", "High", "Critical"],
+      },
+      estimateWasteKg: {
+        type: Number,
+      },
+      environmentalRisk: {
+        type: String,
+      },
+      possibleAction: {
+        type: String,
+      },
+      suggestedAuthority: {
+        type: String,
+      },
+      summary: {
+        type: String,
+      },
     },
   },
   {

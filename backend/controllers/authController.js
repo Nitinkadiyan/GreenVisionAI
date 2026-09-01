@@ -21,6 +21,7 @@ const Signup = async (req, res) => {
       password,
       username,
       otp,
+      role,
       otpExpiry,
       isVerified: false,
       createdAt,
@@ -31,7 +32,7 @@ const Signup = async (req, res) => {
 
     await sendEmail(user.email, "Verify Your Email", html);
 
-    const token = createSecretToken(user._id);
+    const token = createSecretToken(user._id, user.role);
     res.cookie("token", token, {
       withCredentials: true,
       httpOnly: false,
@@ -47,7 +48,7 @@ const Signup = async (req, res) => {
 };
 const Login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
     if (!email || !password) {
       return res.json({
         success: false,
@@ -72,7 +73,7 @@ const Login = async (req, res) => {
         message: "incorrect password",
       });
     }
-    const token = createSecretToken(user._id);
+    const token = createSecretToken(user._id, user.role);
     res.cookie("token", token, {
       withCredentials: true,
       httpOnly: false,
@@ -80,6 +81,7 @@ const Login = async (req, res) => {
     return res.status(201).json({
       message: "User LoggedIn Successfully",
       success: true,
+      user,
     });
   } catch (err) {
     console.log(err);
