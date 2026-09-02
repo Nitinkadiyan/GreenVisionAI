@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Leaf, Menu, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
 
 const links = [
   { label: "Home", href: "#home" },
@@ -12,7 +14,7 @@ const links = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-
+  const navigate = useNavigate();
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
     onScroll();
@@ -23,7 +25,9 @@ export default function Navbar() {
   return (
     <header
       className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled ? "glass-card border-x-0 border-t-0 shadow-soft" : "bg-transparent"
+        scrolled
+          ? "glass-card border-x-0 border-t-0 shadow-soft"
+          : "bg-transparent"
       }`}
     >
       <nav className="mx-auto flex h-18 max-w-7xl items-center justify-between px-6 py-4">
@@ -49,10 +53,10 @@ export default function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          <button className="rounded-full px-4 py-2 text-sm font-semibold text-foreground transition-colors duration-200 hover:bg-muted">
+          <button onClick = {()=>{navigate("/login")}}className="rounded-full px-4 py-2 text-sm font-semibold text-foreground transition-colors duration-200 hover:bg-muted">
             Login
           </button>
-          <button className="gradient-primary rounded-full px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lift">
+          <button onClick = {()=>{navigate("/signup")}}className="gradient-primary rounded-full px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lift">
             Sign Up
           </button>
         </div>

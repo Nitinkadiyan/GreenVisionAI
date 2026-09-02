@@ -6,7 +6,7 @@ const sendEmail = require("../utils/sendEmail.js");
 const Signup = async (req, res) => {
   try {
     console.log(req.body);
-    const { email, password, username, createdAt, role } = req.body;
+    const { email,phone, password, name, city, area,confirmPassword, createdAt, role } = req.body;
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.json({ message: "User already exists" });
@@ -18,16 +18,21 @@ const Signup = async (req, res) => {
 
     const user = await User.create({
       email,
+      phone,
       password,
-      username,
+      name,
       otp,
       role,
+      location:{
+        city,area,
+      },
+      confirmPassword,
       otpExpiry,
       isVerified: false,
       createdAt,
     });
 
-    const html = otpTemplate(user.username, otp);
+    const html = otpTemplate(user.name, otp);
 
     await sendEmail(user.email, "Verify Your Email", html);
 
