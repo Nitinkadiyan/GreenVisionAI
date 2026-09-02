@@ -16,7 +16,7 @@ const cleanupRoutes = require("./routes/cleanupRoutes.js");
 connectDb();
 app.use(
   cors({
-    origin: ["http://localhost:4000"],
+    origin: ["http://localhost:5173"],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
   }),

@@ -2,8 +2,9 @@ const { Signup, Login, Logout,verifyEmail,resetPassword,changePassword,verifyOtp
 const express = require("express");
 const {verifyToken} = require("../middleware/authMiddleware.js");
 const router = express.Router();
+const upload = require("../middleware/multer.js");
 router.get("/me",verifyToken,getUser);
-router.post("/signup", Signup);
+router.post("/signup",upload.single("profilePicture"), Signup);
 router.post("/login", Login);
 router.post("/logout", Logout);
 router.post("/verify-email",verifyEmail);
