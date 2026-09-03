@@ -77,7 +77,7 @@ const Login = async (req, res) => {
         message: "incorrect password",
       });
     }
-    const token = createSecretToken(user._id, user.role);
+    const token = createSecretToken(user._id,user.role);
     res.cookie("token", token, {
       withCredentials: true,
       httpOnly: false,
