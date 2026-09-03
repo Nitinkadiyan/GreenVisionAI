@@ -30,6 +30,7 @@ const Signup = async (req, res) => {
       otpExpiry,
       isVerified: false,
       createdAt,
+      role,
     });
 
     const html = otpTemplate(user.name, otp);
@@ -140,7 +141,7 @@ const resetPassword = async (req, res) => {
     const { email } = req.body;
     const user = User.findOne({ email });
     if (!user) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         message: "User not found",
       });

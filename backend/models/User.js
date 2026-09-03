@@ -57,12 +57,6 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: new Date(),
   },
-  role: {
-    type: String,
-    enum: ["citizen", "government"],
-    default: "citizen",
-    required: true,
-  },
   accessCode: {
     type: String, 
     trim: true,
@@ -74,6 +68,12 @@ const userSchema = new mongoose.Schema({
   resetVerified: {
     type: Boolean,
     default: false,
+  },
+  role: {
+    type: String,
+    enum: ["Government", "User", "Admin"],
+    default: "User",
+  },
   },
   otp: String,
   otpExpiry: Date,

@@ -11,7 +11,7 @@ const sendEmail = async (to, subject, html) => {
     console.log("User Signed In SUccessfully");
     console.log(info);
   } catch (error) {
-    message: err.message;
+    message: error.message;
     console.log(error);
   }
 };
