@@ -1,15 +1,19 @@
 "use client";
-
+import { Mail } from "lucide-react";
 import { useRef, useState } from "react";
 import { Check, Leaf, MailCheck } from "lucide-react";
-
+import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 const OTP_LENGTH = 6;
-
+import axios from "axios";
 export default function Page() {
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(""));
   const [submitted, setSubmitted] = useState(false);
   const inputRefs = useRef([]);
-
+  const navigate= useNavigate();
+  const location = useLocation();
+  const { email } = location.state || {};
+  console.log("Email: ", email);
   const updateDigit = (index, value) => {
     const digit = value.replace(/\D/g, "").slice(-1);
     const next = [...otp];
@@ -42,9 +46,29 @@ export default function Page() {
       inputRefs.current[index + 1]?.focus();
   };
 
-  const submitOtp = (event) => {
-    event.preventDefault();
-    if (otp.every(Boolean)) setSubmitted(true);
+  const submitOTP = async (e) => {
+    e.preventDefault();
+
+    try {
+      console.log("nikku");
+      // console.log(email);
+      // setSubmitted = true;
+      const Value = otp.join("");
+      console.log("otp", Value);
+      const response = await axios.post("http://localhost:3000/verify-email", {
+        email: email,
+        otp: Value,
+      });
+
+      console.log(response.data);
+      navigate("/login", {
+        state: {
+          email: email,
+        },
+      });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (
@@ -75,7 +99,7 @@ export default function Page() {
             </p>
           </div>
         ) : (
-          <form onSubmit={submitOtp}>
+          <form onSubmit={submitOTP}>
             <div className="text-center">
               <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eaf7ed] text-[#21834a]">
                 <MailCheck size={25} strokeWidth={1.8} />

@@ -17,8 +17,9 @@ import {
   Landmark,
   HeartHandshake,
 } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import loginIllustration from "../assets/loginpage.jpg";
-
+import { useNavigate } from "react-router-dom";
 const perks = [
   {
     icon: Sprout,
@@ -74,6 +75,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
+  const location = useLocation();
+  const navigate = useNavigate();
+  
 
   const validate = () => {
     const next = {};
@@ -103,7 +107,9 @@ export default function Login() {
     } catch (error) {
       console.log("login failed");
       console.log(error.message);
-    } finally {git 
+    } finally {
+      navigate("/user-home-page");
+
       setLoading(false);
     }
   };
