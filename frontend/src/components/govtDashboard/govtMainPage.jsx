@@ -1,5 +1,5 @@
 "use client";
-
+import axios from "axios";
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -107,6 +107,8 @@ const reports = [
       "Overflow detected across a residential lane; immediate response recommended.",
   },
 ];
+// const reports = await axios.get("http://localhost:3000/reports/get-reports");
+console.log(reports);
 const operations = [
   {
     task: "Plastic Cleanup",
@@ -229,7 +231,7 @@ export default function GovernmentDashboard() {
     () =>
       reportState.filter(
         (r) =>
-          `${r.id} ${r.issue} ${r.location}`
+          `${r.id} ${r.description} ${r.location}`
             .toLowerCase()
             .includes(search.toLowerCase()) &&
           (reviewTab === "All" ||

@@ -1,4 +1,5 @@
 "use client";
+import { useNavigate } from "react-router-dom";
 
 import React, { useState } from "react";
 import {
@@ -40,7 +41,7 @@ export default function SignUp() {
   const [profilePreview, setProfilePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-
+  const navigate = useNavigate();
   const updateField = (event) => {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
@@ -134,6 +135,15 @@ export default function SignUp() {
         "http://localhost:3000/signup",
         formData,
       );
+      console.log("response :  ", response);
+      console.log("nikku");
+      console.log(form.email);
+      navigate("/verify-email", {
+        state: {
+          email: form.email,
+          role: response.data.role,
+        },
+      });
       console.log("Signup successful:", response.data);
       setLoading(false);
     } catch (error) {

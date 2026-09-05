@@ -89,6 +89,7 @@ const reportSchema = new mongoose.Schema(
 
     escalatedAt: {
       type: Date,
+    },
     aiAnalysis: {
       wasteType: {
         type: String,

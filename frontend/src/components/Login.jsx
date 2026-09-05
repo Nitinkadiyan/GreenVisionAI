@@ -1,4 +1,5 @@
 import { useState } from "react";
+import axios from "axios";
 import { motion } from "motion/react";
 import {
   Leaf,
@@ -15,10 +16,10 @@ import {
   User,
   Landmark,
   HeartHandshake,
-  
 } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import loginIllustration from "../assets/loginpage.jpg";
-
+import { useNavigate } from "react-router-dom";
 const perks = [
   {
     icon: Sprout,
@@ -30,7 +31,7 @@ const perks = [
     title: "Live Environmental Monitoring",
     text: "Track reports and community cleanup in real time.",
   },
-   {
+  {
     icon: Trophy,
     title: "Community Rewards",
     text: "Earn Eco Points and rewards by contributing to cleaner cities.",
@@ -38,9 +39,8 @@ const perks = [
 ];
 
 const roles = [
-  { id: "citizen", label: "Citizen"  },
-  { id: "government", label: "Government Officer"  },
-  
+  { id: "citizen", label: "Citizen" },
+  { id: "government", label: "Government Officer" },
 ];
 
 function GoogleIcon({ className = "" }) {
@@ -75,6 +75,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
+  const location = useLocation();
+  const navigate = useNavigate();
+  
 
   const validate = () => {
     const next = {};
@@ -82,22 +85,34 @@ export default function Login() {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim()))
       next.email = "Enter a valid email address.";
     if (!password) next.password = "Password is required.";
-    else if (password.length < 6) next.password = "Password must be at least 6 characters.";
+    else if (password.length < 6)
+      next.password = "Password must be at least 6 characters.";
     return next;
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     setFormError("");
     const next = validate();
     setErrors(next);
     if (Object.keys(next).length) return;
+    try {
+      setLoading(true);
+      const response = await axios.post("http://localhost:3000/login", {
+        email: email,
+        password: password,
+        role: role,
+      });
+      localStorage.setItem("token",response.data);
+      console.log("Login response:", response);
+    } catch (error) {
+      console.log("login failed");
+      console.log(error.message);
+    } finally {
+      navigate("/user-home-page");
 
-    setLoading(true);
-    window.setTimeout(() => {
       setLoading(false);
-      setFormError("Incorrect email or password. Please try again.");
-    }, 1200);
+    }
   };
 
   const inputClass = (hasError) =>
@@ -140,10 +155,13 @@ export default function Login() {
 
           <h1 className="mt-10 text-4xl leading-tight font-bold text-foreground xl:text-5xl">
             Welcome{" "}
-            <span className="gradient-primary bg-clip-text text-transparent">Back</span>
+            <span className="gradient-primary bg-clip-text text-transparent">
+              Back
+            </span>
           </h1>
           <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground">
-            Sign in to continue building a cleaner and smarter environment with AI.
+            Sign in to continue building a cleaner and smarter environment with
+            AI.
           </p>
 
           <div className="mt-9 flex flex-col gap-3">
@@ -152,15 +170,23 @@ export default function Login() {
                 key={p.title}
                 initial={{ opacity: 0, x: -18 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 0.15 + i * 0.12, ease: [0.22, 1, 0.36, 1] }}
+                transition={{
+                  duration: 0.6,
+                  delay: 0.15 + i * 0.12,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
                 className="glass-card group flex items-start gap-4 rounded-2xl p-4 shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lift"
               >
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
                   <p.icon className="h-5 w-5" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{p.title}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{p.text}</p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {p.title}
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    {p.text}
+                  </p>
                 </div>
               </motion.div>
             ))}
@@ -249,11 +275,17 @@ export default function Login() {
                   />
                   <button
                     type="button"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                     onClick={() => setShowPassword((v) => !v)}
                     className="absolute top-1/2 right-3 -translate-y-1/2 rounded-lg p-1.5 text-muted-foreground transition-colors duration-200 hover:bg-muted hover:text-foreground"
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
                 {errors.password && (
@@ -283,7 +315,9 @@ export default function Login() {
               </div>
 
               <div>
-                <p className="mb-2 text-xs font-semibold tracking-wide text-foreground">Login As</p>
+                <p className="mb-2 text-xs font-semibold tracking-wide text-foreground">
+                  Login As
+                </p>
                 <div className="grid gap-2 sm:grid-cols-3">
                   {roles.map((r) => {
                     const active = role === r.id;
