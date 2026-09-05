@@ -22,7 +22,7 @@ router.post(
   createReport,
 );
 
-router.get("/get-report", verifyToken,authorizeRoles("government"), getAllReports);
+router.get("/get-reports", getAllReports);
 router.get("/get-report/:id", verifyToken,authorizeRoles("citizen"), getReport);
 router.patch(
   "/update-report/:id",

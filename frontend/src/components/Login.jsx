@@ -103,6 +103,7 @@ export default function Login() {
         password: password,
         role: role,
       });
+      localStorage.setItem("token",response.data);
       console.log("Login response:", response);
     } catch (error) {
       console.log("login failed");

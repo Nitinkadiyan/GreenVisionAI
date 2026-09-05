@@ -6,6 +6,8 @@ import Signup from "./components/Signup.jsx";
 import Login from "./components/Login.jsx";
 import VerifyAccount from "./components/home/VerifyAccount.jsx";
 import UserDashboard from "./components/home/Dashboard.jsx";
+
+import GovernmentDashboard from "./components/govtDashboard/govtMainPage.jsx";
 export default function App(){
   return(
     
@@ -17,6 +19,7 @@ export default function App(){
       <Route path="/signup"element={<Signup/>}/>
       <Route path="/verify-email"element ={<VerifyAccount/>}/>
       <Route path="/user-home-page"element ={<UserDashboard/>}/>
+      <Route path="/government-page"element={<GovernmentDashboard/>}/>
     </Routes>
     
   )
