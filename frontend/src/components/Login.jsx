@@ -103,13 +103,14 @@ export default function Login() {
         password: password,
         role: role,
       });
-      localStorage.setItem("token",response.data);
+      console.log(response.data.token);
+      localStorage.setItem("token",response.data.token);
       console.log("Login response:", response);
     } catch (error) {
       console.log("login failed");
       console.log(error.message);
     } finally {
-      navigate("/user-home-page");
+      navigate("/government-page");
 
       setLoading(false);
     }
