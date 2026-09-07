@@ -132,7 +132,7 @@ export default function SignUp() {
       // }
 
       const response = await axios.post(
-        "http://localhost:3000/signup",
+        "http://localhost:5001/signup",
         formData,
       );
       console.log("response :  ", response);
