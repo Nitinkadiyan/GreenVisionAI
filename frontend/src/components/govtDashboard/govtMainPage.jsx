@@ -63,52 +63,61 @@ const navItems = [
   ["Settings", Settings],
 ];
 const chartData = [68, 84, 72, 108, 96, 128, 118, 142, 130, 164, 151, 178];
-const reports = [
-  {
-    id: "GV-2026-00128",
-    issue: "Plastic Waste",
-    location: "Sector 21",
-    severity: "High",
-    confidence: "96%",
-    date: "16 Aug 2026",
-    status: "Pending",
-    priority: "Critical",
-    image:
-      "https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&w=160&q=80",
-    summary:
-      "Large plastic accumulation near a public drain with likely waterway contamination risk.",
+// const reports = [
+//   {
+//     id: "GV-2026-00128",
+//     issue: "Plastic Waste",
+//     location: "Sector 21",
+//     severity: "High",
+//     confidence: "96%",
+//     date: "16 Aug 2026",
+//     status: "Pending",
+//     priority: "Critical",
+//     image:
+//       "https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&w=160&q=80",
+//     summary:
+//       "Large plastic accumulation near a public drain with likely waterway contamination risk.",
+//   },
+//   {
+//     id: "GV-2026-00131",
+//     issue: "Construction Debris",
+//     location: "Model Town",
+//     severity: "High",
+//     confidence: "91%",
+//     date: "16 Aug 2026",
+//     status: "Pending",
+//     priority: "High",
+//     image:
+//       "https://images.unsplash.com/photo-1531835551805-16d864c8d311?auto=format&fit=crop&w=160&q=80",
+//     summary:
+//       "Unsegregated construction material blocking a pedestrian corridor.",
+//   },
+//   {
+//     id: "GV-2026-00120",
+//     issue: "Sewage Overflow",
+//     location: "Civil Lines",
+//     severity: "Critical",
+//     confidence: "98%",
+//     date: "15 Aug 2026",
+//     status: "Approved",
+//     priority: "Critical",
+//     image:
+//       "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=160&q=80",
+//     summary:
+//       "Overflow detected across a residential lane; immediate response recommended.",
+//   },
+// ];
+const token = localStorage.getItem("token");
+console.log("token",token);
+console.log("before axios req");
+const response = await axios.get("http://localhost:5001/reports/get-reports", {
+  headers: {
+    Authorization: `Bearer ${token}`,
   },
-  {
-    id: "GV-2026-00131",
-    issue: "Construction Debris",
-    location: "Model Town",
-    severity: "High",
-    confidence: "91%",
-    date: "16 Aug 2026",
-    status: "Pending",
-    priority: "High",
-    image:
-      "https://images.unsplash.com/photo-1531835551805-16d864c8d311?auto=format&fit=crop&w=160&q=80",
-    summary:
-      "Unsegregated construction material blocking a pedestrian corridor.",
-  },
-  {
-    id: "GV-2026-00120",
-    issue: "Sewage Overflow",
-    location: "Civil Lines",
-    severity: "Critical",
-    confidence: "98%",
-    date: "15 Aug 2026",
-    status: "Approved",
-    priority: "Critical",
-    image:
-      "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=160&q=80",
-    summary:
-      "Overflow detected across a residential lane; immediate response recommended.",
-  },
-];
-// const reports = await axios.get("http://localhost:3000/reports/get-reports");
-console.log(reports);
+});
+console.log("after axios req");
+// console.log("reports",reports);
+const reports = response.data.reports;
 const operations = [
   {
     task: "Plastic Cleanup",
@@ -226,12 +235,12 @@ export default function GovernmentDashboard() {
   const [rewardOpen, setRewardOpen] = useState(false),
     [notifications, setNotifications] = useState(false),
     [toast, setToast] = useState("");
-  const [reportState, setReportState] = useState(reports);
+  const [reportState, setReportState] = useState(response.data.reports);
   const filtered = useMemo(
     () =>
       reportState.filter(
         (r) =>
-          `${r.id} ${r.description} ${r.location}`
+          `${r.id} ${r.description} ${r.location.latitude}`
             .toLowerCase()
             .includes(search.toLowerCase()) &&
           (reviewTab === "All" ||
@@ -638,13 +647,13 @@ export default function GovernmentDashboard() {
                 <tbody>
                   {reports.map((r) => (
                     <tr
-                      key={r.id}
+                      key={r._id}
                       className="border-b border-slate-50 last:border-0"
                     >
                       <td className="py-3">
                         <div className="flex items-center gap-3">
                           <img
-                            src={r.image}
+                            src={r.imageUrl}
                             alt="environmental report"
                             className="h-9 w-11 rounded-lg object-cover"
                           />
@@ -657,18 +666,18 @@ export default function GovernmentDashboard() {
                         </div>
                       </td>
                       <td className="font-semibold text-slate-700">
-                        {r.issue}
+                        {r.description}
                       </td>
-                      <td className="text-slate-500">{r.location}</td>
+                      <td className="text-slate-500">{r.location.latitude}</td>
                       <td>
                         <Badge
-                          tone={r.severity === "Critical" ? "red" : "orange"}
+                          tone={r.aiAnalysis.severity === "Critical" ? "red" : "orange"}
                         >
-                          {r.severity}
+                          {r.aiAnalysis.severity}
                         </Badge>
                       </td>
                       <td className="font-bold text-emerald-700">
-                        {r.confidence}
+                        {r.aiAnalysis.confidence}
                       </td>
                       <td className="text-slate-500">{r.date}</td>
                       <td>
@@ -678,9 +687,9 @@ export default function GovernmentDashboard() {
                           {r.status}
                         </Badge>
                       </td>
-                      <td>
+                      {/* <td>
                         <Badge tone="red">{r.priority}</Badge>
-                      </td>
+                      </td> */}
                       <td>
                         <button
                           onClick={() => setSelected(r)}
@@ -719,7 +728,7 @@ export default function GovernmentDashboard() {
                 {filtered.map((r) => (
                   <motion.div
                     layout
-                    key={r.id}
+                    key={r._id}
                     className="rounded-xl border border-slate-100 p-4"
                   >
                     <div className="flex gap-3">
@@ -734,9 +743,9 @@ export default function GovernmentDashboard() {
                             {r.id}
                           </p>
                           <Badge
-                            tone={r.severity === "Critical" ? "red" : "orange"}
+                            tone={r.aiAnalysis.severity === "Critical" ? "red" : "orange"}
                           >
-                            {r.severity}
+                            {r.aiAnalysis.severity}
                           </Badge>
                         </div>
                         <p className="mt-1 text-xs font-semibold text-slate-700">
@@ -744,26 +753,26 @@ export default function GovernmentDashboard() {
                         </p>
                         <p className="mt-1 flex items-center gap-1 text-[10px] text-slate-400">
                           <MapPin size={10} />
-                          {r.location} · {r.date}
+                          {r.location.latitude} · {r.createdAt}
                         </p>
                       </div>
                     </div>
                     <p className="mt-3 line-clamp-2 text-xs leading-5 text-slate-500">
-                      {r.summary}
+                      {r.description}
                     </p>
                     <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
                       <span className="text-[11px] font-bold text-emerald-700">
-                        {r.confidence} AI confidence
+                        {r.aiAnalysis.confidence} AI confidence
                       </span>
                       <div className="flex gap-1.5">
                         <button
-                          onClick={() => updateReport(r.id, "Approved")}
+                          onClick={() => updateReport(r._id, "Approved")}
                           className="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[10px] font-bold text-white"
                         >
                           Approve
                         </button>
                         <button
-                          onClick={() => updateReport(r.id, "Rejected")}
+                          onClick={() => updateReport(r._id, "Rejected")}
                           className="rounded-lg border border-red-100 px-2.5 py-1.5 text-[10px] font-bold text-red-600"
                         >
                           Reject

@@ -87,6 +87,7 @@ const Login = async (req, res) => {
       message: "User LoggedIn Successfully",
       success: true,
       user,
+      token,
     });
   } catch (err) {
     console.log(err);

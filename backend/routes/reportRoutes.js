@@ -28,25 +28,8 @@ router.post(
   createReport,
 );
 
-router.get("/get-reports", getAllReports);
-router.get(
-  "/get-report/:id",
-  verifyToken,
-  authorizeRoles("citizen"),
-  getReport,
-);
-router.get(
-  "/get-report",
-  verifyToken,
-  authorizeRoles("citizen"),
-  getAllReports,
-);
-router.get(
-  "/get-report/:id",
-  verifyToken,
-  authorizeRoles("citizen"),
-  getReport,
-);
+router.get("/get-reports",verifyToken, getAllReports);
+router.get("/get-report/:id", verifyToken,authorizeRoles("citizen"), getReport);
 router.patch(
   "/update-report/:id",
   verifyToken,
