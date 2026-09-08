@@ -55,7 +55,7 @@ export default function Page() {
       // setSubmitted = true;
       const Value = otp.join("");
       console.log("otp", Value);
-      const response = await axios.post("http://localhost:3000/verify-email", {
+      const response = await axios.post("http://localhost:5001/verify-email", {
         email: email,
         otp: Value,
       });

@@ -16,6 +16,7 @@ Analyze:
 - possibleAction
 - suggestedAuthority
 - summary
+- priority
 
 Rules:
 - confidence must be a number between 0 and 100.
@@ -25,6 +26,7 @@ Rules:
 - possibleAction should describe the recommended action.
 - suggestedAuthority should identify the most appropriate authority.
 - summary should be a short description of the issue.
+- priority must be one of : Low, Medium, High, Urgent.
 
 If the image does not contain a recognizable environmental issue,
 clearly indicate that in the response.
@@ -180,4 +182,4 @@ confidence must be a number between 0 and 1.
     });
   }
 };
-module.exports = {askAI,askAI2};
+module.exports = { askAI, askAI2 };

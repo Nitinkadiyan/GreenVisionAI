@@ -1,29 +1,52 @@
 const express = require("express");
-const {authorizeRoles} = require("../middleware/authorizeRole.js");
+const { authorizeRoles } = require("../middleware/authorizeRole.js");
 const router = express.Router();
 const {
   createReport,
+  analyzeReport,
   getAllReports,
   getReport,
   updateReport,
   deleteReport,
 } = require("../controllers/reportController.js");
 const { verifyToken } = require("../middleware/authMiddleware.js");
-const  upload  = require("../middleware/multer.js");
+const upload = require("../middleware/multer.js");
 
 router.post(
+  "/analyze",
+  upload.fields([{ name: "image", maxCount: 1 }]),
+  analyzeReport,
+);
+router.post(
   "/create-report",
-  verifyToken,
-  authorizeRoles("citizen"),
+  // verifyToken,
+  // authorizeRoles("citizen"),
   upload.fields([
     { name: "image", maxCount: 1 },
-    { name: "video", maxCount: 1 }
+    { name: "video", maxCount: 1 },
   ]),
   createReport,
 );
 
 router.get("/get-reports", getAllReports);
-router.get("/get-report/:id", verifyToken,authorizeRoles("citizen"), getReport);
+router.get(
+  "/get-report/:id",
+  verifyToken,
+  authorizeRoles("citizen"),
+  getReport,
+);
+router.get(
+  "/get-report",
+  verifyToken,
+  authorizeRoles("citizen"),
+  getAllReports,
+);
+router.get(
+  "/get-report/:id",
+  verifyToken,
+  authorizeRoles("citizen"),
+  getReport,
+);
 router.patch(
   "/update-report/:id",
   verifyToken,
@@ -31,5 +54,10 @@ router.patch(
   upload.single("imageUrl"),
   updateReport,
 );
-router.delete("/delete-report/:id",authorizeRoles("citizen"), verifyToken, deleteReport);
+router.delete(
+  "/delete-report/:id",
+  authorizeRoles("citizen"),
+  verifyToken,
+  deleteReport,
+);
 module.exports = router;
