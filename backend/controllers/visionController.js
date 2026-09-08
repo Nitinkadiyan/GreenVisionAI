@@ -1,14 +1,14 @@
-import { analyzeImage } from "../services/visionServices.js";
+// import { analyzeImage } from "../services/visionServices.js";
+const { analyzeImage } = require("../services/VisionService.js");
 
-
-export const analyzeImageController = async (req, res) => {
+const analyzeImageController = async (req, res) => {
   try {
     console.log(req.file);
     const result = await analyzeImage(req.file);
     console.log(result);
     return res.status(200).json({
       success: true,
-      data: result,
+      analysis: result,
     });
   } catch (err) {
     console.log(err);
@@ -18,3 +18,5 @@ export const analyzeImageController = async (req, res) => {
     });
   }
 };
+
+module.exports = { analyzeImageController };
