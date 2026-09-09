@@ -3,9 +3,46 @@ const cloudinary = require("../utils/cloudinary.js");
 const fs = require("fs");
 const { analyzeImage } = require("../services/VisionService.js");
 const { report } = require("process");
+const { analyzeImageController } = require("./visionController.js");
+const analyzeReport = async (req, res) => {
+  try {
+    const { description } = req.body;
+
+    if (!description) {
+      return res.status(400).json({
+        success: false,
+        message: "Description is required",
+      });
+    }
+
+    if (!req.files?.image?.[0]) {
+      return res.status(400).json({
+        success: false,
+        message: "Image is required",
+      });
+    }
+
+    const image = req.files.image[0];
+
+    const result = await analyzeImage(image);
+
+    return res.status(200).json({
+      success: true,
+      message: "Image analyzed successfully",
+      analysis: result,
+    });
+  } catch (error) {
+    console.error("AI analysis error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to analyze image",
+    });
+  }
+};
 const createReport = async (req, res) => {
   try {
-    const { description, longitude, latitude } = req.body;
+    const { description, longitude, latitude, aiAnalysis } = req.body;
     if (!description) {
       return res.status(400).json({
         success: false,
@@ -26,10 +63,23 @@ const createReport = async (req, res) => {
     console.log("nikku");
     const image = req.files?.image?.[0];
     console.log(image);
-    const result = await analyzeImage(image);
+    if (!image) {
+      return res.status(400).json({
+        success: false,
+        message: "Image is required",
+      });
+    }
+    if (!aiAnalysis) {
+      return res.status(400).json({
+        success: false,
+        message: "AI analysis is required",
+      });
+    }
+    const parsedAnalysis = JSON.parse(aiAnalysis);
+    // const result = await analyzeImage(image);
     const uploadedImage = await cloudinary.uploader.upload(image.path);
     console.log("before result");
-    console.log(result);
+    // console.log(result);
     const report = await Report.create({
       userId: req.user.id,
       description: description,
@@ -39,7 +89,7 @@ const createReport = async (req, res) => {
       },
       imageUrl: uploadedImage.secure_url,
       imagePublicId: uploadedImage.public_id,
-      aiAnalysis: result,
+      aiAnalysis: parsedAnalysis,
       status: "Pending Review",
     });
     // if (req.file && fs.existsSync(req.file.path)) {
@@ -212,6 +262,7 @@ const deleteAllReports = async (req, res) => {
   }
 };
 module.exports = {
+  analyzeReport,
   createReport,
   getAllReports,
   getReport,

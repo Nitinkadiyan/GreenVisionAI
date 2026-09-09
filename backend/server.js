@@ -13,6 +13,7 @@ app.use(cookieParser());
 const reportRoutes = require("./routes/reportRoutes.js");
 const governmentRoutes = require("./routes/GovernmentRoutes.js");
 const cleanupRoutes = require("./routes/cleanupRoutes.js");
+const analyzeRoute = require("./routes/visionRoutes.js");
 connectDb();
 app.use(
   cors({
@@ -23,8 +24,9 @@ app.use(
 );
 app.use("/", authRoutes);
 app.use("/government", governmentRoutes);
-app.use("/reports",reportRoutes);
-app.use("/volunteer",cleanupRoutes);
+app.use("/reports", reportRoutes);
+app.use("/analyzeReport", analyzeRoute);
+app.use("/volunteer", cleanupRoutes);
 app.listen(process.env.PORT, () => {
   console.log(`Server is listening on port ${process.env.PORT}`);
 });

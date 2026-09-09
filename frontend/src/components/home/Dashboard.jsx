@@ -444,7 +444,7 @@ function Dashboard({ setView, query }) {
       <section className="relative overflow-hidden rounded-3xl bg-linear-to-br from-emerald-700 via-emerald-600 to-teal-500 p-6 text-white shadow-xl shadow-emerald-100 md:p-9">
         <div className="relative z-10 max-w-xl">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold ring-1 ring-white/20">
-            <Zap size={14} />
+            <Zap size={14} /> 
             Small actions. Big impact.
           </div>
           <h2 className="text-3xl font-bold tracking-tight md:text-4xl">

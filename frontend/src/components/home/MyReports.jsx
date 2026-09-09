@@ -763,7 +763,7 @@
 
 // export default MyReports;
 "use client";
-
+import api from "../../api/axios"
 import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
@@ -786,18 +786,18 @@ import {
   X,
 } from "lucide-react";
 
-const mockAnalysis = {
-  wasteType: "Plastic Waste",
-  confidence: 94,
-  estimatedQuantity: "Approximately 35 kg",
-  estimatedDegradation: "High",
-  environmentalImpact:
-    "High — the accumulated plastic waste may contaminate nearby soil and water and can persist in the environment for many years.",
-  severity: "High",
-  recommendedAction:
-    "Immediate removal, segregation, and proper disposal or recycling of the plastic waste.",
-  recommendedPriority: "High",
-};
+// const mockAnalysis = {
+//   wasteType: "Plastic Waste",
+//   confidence: 94,
+//   estimatedQuantity: "Approximately 35 kg",
+//   estimatedDegradation: "High",
+//   environmentalImpact:
+//     "High — the accumulated plastic waste may contaminate nearby soil and water and can persist in the environment for many years.",
+//   severity: "High",
+//   recommendedAction:
+//     "Immediate removal, segregation, and proper disposal or recycling of the plastic waste.",
+//   recommendedPriority: "High",
+// };
 
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10";
@@ -866,7 +866,7 @@ function ProcessingPanel() {
   );
 }
 
-function AnalysisResults({ result, setResult }) {
+function AnalysisResults({ response, setResult }) {
   const update = (key, value) =>
     setResult((current) => ({ ...current, [key]: value }));
   return (
@@ -894,7 +894,7 @@ function AnalysisResults({ result, setResult }) {
           <div className="relative">
             <Trash2 className="pointer-events-none absolute left-3 top-3.5 size-4 text-emerald-600" />
             <input
-              value={result.wasteType}
+              value={response?.wasteType||""}
               onChange={(e) => update("wasteType", e.target.value)}
               className={`${inputClass} pl-10`}
             />
@@ -904,13 +904,13 @@ function AnalysisResults({ result, setResult }) {
           <div className="mb-2 flex justify-between">
             <FieldLabel>Confidence</FieldLabel>
             <span className="text-sm font-bold text-emerald-700">
-              {result.confidence}%
+              {response?.confidence ?? 0}%
             </span>
           </div>
           <div className="h-2 rounded-full bg-white">
             <div
               className="h-full rounded-full bg-emerald-600"
-              style={{ width: `${result.confidence}%` }}
+              style={{ width: `${response?.confidence ?? 0}%` }}
             />
           </div>
           <p className="mt-2 text-xs text-slate-500">AI Confidence</p>
@@ -918,37 +918,15 @@ function AnalysisResults({ result, setResult }) {
         <div>
           <FieldLabel>Estimated Quantity</FieldLabel>
           <input
-            value={result.estimatedQuantity}
-            onChange={(e) => update("estimatedQuantity", e.target.value)}
+            value={response?.estimatedWasteKg || ""}
+            onChange={(e) => update("estimatedWasteKg", e.target.value)}
             className={inputClass}
-          />
-        </div>
-        <div>
-          <FieldLabel>Estimated Degradation</FieldLabel>
-          <select
-            value={result.estimatedDegradation}
-            onChange={(e) => update("estimatedDegradation", e.target.value)}
-            className={inputClass}
-          >
-            <option>Low</option>
-            <option>Medium</option>
-            <option>High</option>
-            <option>Very High</option>
-          </select>
-        </div>
-        <div>
-          <FieldLabel>Environmental Impact</FieldLabel>
-          <textarea
-            value={result.environmentalImpact}
-            onChange={(e) => update("environmentalImpact", e.target.value)}
-            rows={3}
-            className={`${inputClass} resize-none`}
           />
         </div>
         <div>
           <FieldLabel>Severity</FieldLabel>
           <select
-            value={result.severity}
+            value={response?.severity || "Low"}
             onChange={(e) => update("severity", e.target.value)}
             className={inputClass}
           >
@@ -958,19 +936,47 @@ function AnalysisResults({ result, setResult }) {
             <option>Critical</option>
           </select>
         </div>
+        {/* <div>
+          <FieldLabel>Environmental Impact</FieldLabel>
+          <textarea
+            value={result.environmentalImpact}
+            onChange={(e) => update("environmentalImpact", e.target.value)}
+            rows={3}
+            className={`${inputClass} resize-none`}
+          />
+        </div> */}
+
         <div>
           <FieldLabel>Recommended Action</FieldLabel>
           <textarea
-            value={result.recommendedAction}
-            onChange={(e) => update("recommendedAction", e.target.value)}
+            value={response?.possibleAction || ""}
+            onChange={(e) => update("possibleAction", e.target.value)}
             rows={3}
             className={`${inputClass} resize-none`}
           />
         </div>
-        <div>
+                <div>
+          <FieldLabel>Environmental Risk</FieldLabel>
+          <textarea
+            value={response?.environmentalRisk || ""}
+            onChange={(e) => update("environmentalRisk", e.target.value)}
+            rows={3}
+            className={`${inputClass} resize-none`}
+          />
+        </div>
+                <div>
+          <FieldLabel>Suggested Authority</FieldLabel>
+          <textarea
+            value={response?.suggestedAuthority || ""}
+            onChange={(e) => update("suggestedAuthority", e.target.value)}
+            rows={3}
+            className={`${inputClass} resize-none`}
+          />
+        </div>
+        {/* <div>
           <FieldLabel>Recommended Priority</FieldLabel>
           <select
-            value={result.recommendedPriority}
+            value={response?.recommendedPriority ||"Medium"}
             onChange={(e) => update("recommendedPriority", e.target.value)}
             className={inputClass}
           >
@@ -979,6 +985,17 @@ function AnalysisResults({ result, setResult }) {
             <option>High</option>
             <option>Urgent</option>
           </select>
+        </div> */}
+          <div>
+          <FieldLabel>AI Summary</FieldLabel>
+          <textarea
+            value={response?.summary || ""}
+            onChange={(e) =>
+              update("summary", e.target.value)
+            }
+            rows={3}
+            className={`${inputClass} resize-none`}
+          />
         </div>
       </div>
       <div className="mt-6 flex gap-3 rounded-xl bg-white/70 p-4 text-xs leading-5 text-slate-600">
@@ -1009,13 +1026,13 @@ export default function CreateReport() {
     latitude: "",
     longitude: "",
   });
-  const [result, setResult] = useState(mockAnalysis);
+  const [result, setResult] = useState(null);
 
   useEffect(
     () => () => image?.preview && URL.revokeObjectURL(image.preview),
     [image],
   );
-
+ 
   const chooseImage = (file) => {
     if (!file || !file.type.startsWith("image/")) return;
     setImage({ file, preview: URL.createObjectURL(file) });
@@ -1030,14 +1047,47 @@ export default function CreateReport() {
     setErrors(next);
     return !Object.keys(next).length;
   };
-  const analyze = () => {
-    if (!validate()) return;
+  const analyze = async () => {
+  if (!validate()) return;
+
+  if (!coordinates.latitude || !coordinates.longitude) {
+    alert("Please provide your location");
+    return;
+  }
+
+  try {
     setProcessing(true);
-    setTimeout(() => {
-      setProcessing(false);
-      setAnalyzed(true);
-    }, 2600);
-  };
+
+    const formData = new FormData();
+
+    formData.append("image", image.file);
+    formData.append("description", description);
+    formData.append("latitude", coordinates.latitude);
+    formData.append("longitude", coordinates.longitude);
+
+    const response = await api.post(
+      "/analyzeReport/analyze",
+      formData
+    );
+
+    console.log("AI Response:", response.data);
+
+    setResult(response.data.analysis);
+
+    setProcessing(false);
+    setAnalyzed(true);
+
+  } catch (error) {
+    console.error("AI analysis error:", error);
+
+    setProcessing(false);
+
+    alert(
+      error.response?.data?.message ||
+      "Failed to analyze the report"
+    );
+  }
+};
   const locate = () => {
     if (navigator.geolocation)
       navigator.geolocation.getCurrentPosition(
@@ -1050,20 +1100,77 @@ export default function CreateReport() {
       );
     else setCoordinates({ latitude: "40.7128", longitude: "-74.0060" });
   };
-  const submit = () => {
-    if (
-      !result.wasteType ||
-      !result.estimatedQuantity ||
-      !result.recommendedAction
-    )
-      return;
-    setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
-      setSubmitted(true);
-    }, 1600);
-  };
+  // const submit = () => {
+  //   if (
+  //     !result.wasteType ||
+  //     !result.estimatedQuantity ||
+  //     !result.recommendedAction
+  //   )
+  //     return;
+  //   setSubmitting(true);
+  //   setTimeout(() => {
+  //     setSubmitting(false);
+  //     setSubmitted(true);
+  //   }, 1600);
+  // };
 
+const submit = async () => {
+  if (!result) {
+    alert("Please analyze the report first");
+    return;
+  }
+
+  if (!image) {
+    alert("Please upload an image");
+    return;
+  }
+
+  if (!description.trim()) {
+    alert("Please give the description");
+    return;
+  }
+
+  if (!coordinates.latitude || !coordinates.longitude) {
+    alert("Please provide your location");
+    return;
+  }
+
+  try {
+    setSubmitting(true);
+
+    const formData = new FormData();
+
+    formData.append("image", image.file);
+    formData.append("description", description);
+    formData.append("latitude", coordinates.latitude);
+    formData.append("longitude", coordinates.longitude);
+
+    formData.append(
+      "aiAnalysis",
+      JSON.stringify(result)
+    );
+
+    const response = await api.post(
+      "/reports/create-report",
+      formData
+    );
+
+    console.log("Report created:", response.data);
+
+    setSubmitting(false);
+    setSubmitted(true);
+
+  } catch (error) {
+    console.error("Report submission error:", error);
+
+    setSubmitting(false);
+
+    alert(
+      error.response?.data?.message ||
+      "Failed to submit report"
+    );
+  }
+};
   if (submitted)
     return (
       <main className="min-h-screen bg-[#f7fbf8] px-5 py-8 text-slate-900 sm:px-8">
@@ -1417,7 +1524,7 @@ export default function CreateReport() {
               <ProcessingPanel />
             ) : analyzed ? (
               <>
-                <AnalysisResults result={result} setResult={setResult} />
+                <AnalysisResults response={result} setResult={setResult} />
                 <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <div className="flex items-start gap-3">
                     <ShieldCheck className="mt-0.5 size-5 text-emerald-600" />
@@ -1433,11 +1540,11 @@ export default function CreateReport() {
                   <button
                     type="button"
                     disabled={
-                      submitting ||
-                      !result.wasteType ||
-                      !result.estimatedQuantity ||
-                      !result.recommendedAction
-                    }
+  submitting ||
+  !result?.wasteType ||
+  !result?.estimatedWasteKg ||
+  !result?.possibleAction
+}
                     onClick={submit}
                     className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-emerald-600 to-green-700 px-5 py-4 text-sm font-bold text-white transition hover:from-emerald-700 hover:to-green-800 disabled:cursor-not-allowed disabled:opacity-50"
                   >
