@@ -51,10 +51,7 @@ const Signup = async (req, res) => {
     await sendEmail(user.email, "Verify Your Email", html);
 
     const token = createSecretToken(user._id, user.role);
-    res.cookie("token", token, {
-      withCredentials: true,
-      httpOnly: false,
-    })
+   
     return res.status(201).json({
       message: "User signed in successfully",
       success: true,
