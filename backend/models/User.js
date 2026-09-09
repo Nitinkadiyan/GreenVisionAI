@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
+
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
@@ -71,11 +72,45 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: [ "government", "citizen"],
+    enum: ["Government", "User", "Admin"],
+    default: "User",
+  },
+  otp: {
+    type: String,
+  },
+  otpExpiry: {
+    type: Date,
+  },
+  // {
+  //   timestamps: true,
+  // },
+  confirmPassword: {
+    type: String,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: new Date(),
+  },
+  accessCode: {
+    type: String,
+    trim: true,
+  },
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
+  resetVerified: {
+    type: Boolean,
+    default: false,
+  },
+  role: {
+    type: String,
+    enum: ["government", "citizen"],
     default: "citizen",
   },
-  otp: String,
-  otpExpiry: Date,
+  // otp: String,
+  // otpExpiry: Date,
 });
 userSchema.pre("save", async function () {
   console.log("Pre-save hook running");

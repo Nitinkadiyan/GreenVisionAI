@@ -1,4 +1,4 @@
-// import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import Navbar from "./components/Navbar.jsx";
 import Home from "./components/landing/Landing.jsx";
 import { BrowserRouter, Routes, Route } from "react-router-dom";

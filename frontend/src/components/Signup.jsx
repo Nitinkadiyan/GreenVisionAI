@@ -137,6 +137,14 @@ export default function SignUp() {
     if (Object.keys(nextErrors).length > 0) {
       return;
     }
+    navigate("/verify-email", {
+        state: {
+          email: form.email,
+          role: response.data.role,
+        },
+      });
+      console.log("Signup successful:", response.data);
+      setLoading(false);
       } catch (error) {
         console.log(error.response.data);
         if(error.response.status === 400){
@@ -149,14 +157,7 @@ export default function SignUp() {
       
       console.log("nikku");
       console.log(form.email);
-      navigate("/verify-email", {
-        state: {
-          email: form.email,
-          role: response.data.role,
-        },
-      });
-      console.log("Signup successful:", response.data);
-      setLoading(false);
+      
     } catch (error) {
       console.error("Signup failed:", error);
       setLoading(false);
