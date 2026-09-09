@@ -6,10 +6,22 @@ const sendEmail = require("../utils/sendEmail.js");
 const Signup = async (req, res) => {
   try {
     console.log(req.body);
-    const { email,phone, password, name, city, area,confirmPassword, createdAt, role } = req.body;
+    const {
+      email,
+      phone,
+      password,
+      name,
+      city,
+      area,
+      confirmPassword,
+      createdAt,
+      role,
+    } = req.body;
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.json({ message: "User already exists" });
+      return res
+        .status(400)
+        .json({ success: false, message: "User already exists" });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -23,8 +35,9 @@ const Signup = async (req, res) => {
       name,
       otp,
       role,
-      location:{
-        city,area,
+      location: {
+        city,
+        area,
       },
       confirmPassword,
       otpExpiry,
@@ -38,14 +51,12 @@ const Signup = async (req, res) => {
     await sendEmail(user.email, "Verify Your Email", html);
 
     const token = createSecretToken(user._id, user.role);
-    res.cookie("token", token, {
-      withCredentials: true,
-      httpOnly: false,
-    });
+   
     return res.status(201).json({
       message: "User signed in successfully",
       success: true,
       user,
+      token,
     });
   } catch (err) {
     message: (err.message, console.log(err));
@@ -78,11 +89,8 @@ const Login = async (req, res) => {
         message: "incorrect password",
       });
     }
-    const token = createSecretToken(user._id,user.role);
-    res.cookie("token", token, {
-      withCredentials: true,
-      httpOnly: false,
-    });
+    const token = createSecretToken(user._id, user.role);
+   
     return res.status(201).json({
       message: "User LoggedIn Successfully",
       success: true,
