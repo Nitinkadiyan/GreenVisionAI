@@ -96,13 +96,7 @@ export default function SignUp() {
     console.log("function called");
     setSubmitted(true);
 
-    const nextErrors = validate();
-    console.log(nextErrors);
-    setErrors(nextErrors);
-
-    if (Object.keys(nextErrors).length > 0) {
-      return;
-    }
+    
 
     try {
       setLoading(true);
@@ -131,11 +125,28 @@ export default function SignUp() {
       //   );
       // }
 
-      const response = await axios.post(
+      try {
+        const response = await axios.post(
         "http://localhost:5001/signup",
         formData,
       );
-      console.log("response :  ", response);
+      const nextErrors = validate(response);
+    console.log(nextErrors);
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      return;
+    }
+      } catch (error) {
+        console.log(error.response.data);
+        if(error.response.status === 400){
+          setErrors("User already exists");
+          setTimeout(()=>{
+            navigate("/login");
+          },1500);
+        }
+      }
+      
       console.log("nikku");
       console.log(form.email);
       navigate("/verify-email", {
