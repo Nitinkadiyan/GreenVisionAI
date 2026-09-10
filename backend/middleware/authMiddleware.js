@@ -13,7 +13,7 @@ const verifyToken = async (req, res,next) => {
     const token = authHeader.split(" ")[1];
     // const token = req.cookies.token;
     if (!token) {
-      return res.json({
+      return res.status(401).json({
         success: false,
         message: "Token not found",
       });
@@ -26,8 +26,8 @@ const verifyToken = async (req, res,next) => {
     console.log("req.user : " ,req.user);
     next();
   } catch (err) {
-    console.log(err);
-    return res.status(500).json({
+    console.log("jwt error",err);
+    return res.status(401).json({
       success: false,
       message: err.message,
     });
