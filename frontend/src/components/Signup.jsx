@@ -137,6 +137,8 @@ export default function SignUp() {
     if (Object.keys(nextErrors).length > 0) {
       return;
     }
+    console.log(response.data.token);
+    localStorage.setItem("token",response.data.token);
     navigate("/verify-email", {
         state: {
           email: form.email,

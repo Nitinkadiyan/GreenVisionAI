@@ -1,6 +1,7 @@
 "use client";
 import axios from "axios";
-import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Activity,
@@ -107,17 +108,7 @@ const chartData = [68, 84, 72, 108, 96, 128, 118, 142, 130, 164, 151, 178];
 //       "Overflow detected across a residential lane; immediate response recommended.",
 //   },
 // ];
-const token = localStorage.getItem("token");
-console.log("token",token);
-console.log("before axios req");
-const response = await axios.get("http://localhost:5001/reports/get-reports", {
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
-console.log("after axios req");
-// console.log("reports",reports);
-const reports = response.data.reports;
+
 const operations = [
   {
     task: "Plastic Cleanup",
@@ -235,7 +226,65 @@ export default function GovernmentDashboard() {
   const [rewardOpen, setRewardOpen] = useState(false),
     [notifications, setNotifications] = useState(false),
     [toast, setToast] = useState("");
-  const [reportState, setReportState] = useState(response.data.reports);
+  const [reportState, setReportState] = useState([]);
+
+  const navigate = useNavigate();
+  const handleLogout = async () => {
+    console.log("logout function started");
+    try {
+      localStorage.removeItem("token");
+    } catch (error) {
+      console.log(error);
+    } finally {
+      navigate("/login");
+    }
+  };
+  useEffect( () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+       
+      navigate("/login");
+notify("Please Login First");
+      
+    }
+    getAllReports();
+  }, []);
+  const notify = (message) => {
+    setToast(message);
+    setTimeout(() => setToast(""), 2600);
+  };
+  const updateReport = (id, status) => {
+    setReportState((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status } : r)),
+    );
+    setSelected(null);
+    notify(`Report ${id} marked ${status.toLowerCase()}.`);
+  };
+
+  const getAllReports = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      console.log("token:", token);
+      console.log("before axios req");
+
+      const response = await axios.get(
+        "http://localhost:5001/reports/get-reports",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      console.log("after axios req");
+      console.log(response);
+
+      setReportState(response.data.reports);
+
+      // console.log("reports",reports);
+    } catch (error) {
+      console.log(error);
+    }
+  };
   const filtered = useMemo(
     () =>
       reportState.filter(
@@ -249,18 +298,6 @@ export default function GovernmentDashboard() {
       ),
     [search, reviewTab, reportState],
   );
-  const notify = (message) => {
-    setToast(message);
-    setTimeout(() => setToast(""), 2600);
-  };
-  const updateReport = (id, status) => {
-    setReportState((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status } : r)),
-    );
-    setSelected(null);
-    notify(`Report ${id} marked ${status.toLowerCase()}.`);
-  };
-
   return (
     <div className="min-h-screen bg-[#f5faf7] text-slate-800">
       <aside
@@ -321,7 +358,7 @@ export default function GovernmentDashboard() {
             </div>
           </div>
           <button
-            onClick={() => notify("Logout demo action")}
+            onClick={handleLogout}
             className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-100 bg-white py-2 text-[11px] font-semibold text-slate-500 hover:text-red-600"
           >
             <LogOut size={13} /> Logout
@@ -645,7 +682,7 @@ export default function GovernmentDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {reports.map((r) => (
+                  {filtered.map((r) => (
                     <tr
                       key={r._id}
                       className="border-b border-slate-50 last:border-0"
@@ -671,7 +708,11 @@ export default function GovernmentDashboard() {
                       <td className="text-slate-500">{r.location.latitude}</td>
                       <td>
                         <Badge
-                          tone={r.aiAnalysis.severity === "Critical" ? "red" : "orange"}
+                          tone={
+                            r.aiAnalysis.severity === "Critical"
+                              ? "red"
+                              : "orange"
+                          }
                         >
                           {r.aiAnalysis.severity}
                         </Badge>
@@ -743,7 +784,11 @@ export default function GovernmentDashboard() {
                             {r.id}
                           </p>
                           <Badge
-                            tone={r.aiAnalysis.severity === "Critical" ? "red" : "orange"}
+                            tone={
+                              r.aiAnalysis.severity === "Critical"
+                                ? "red"
+                                : "orange"
+                            }
                           >
                             {r.aiAnalysis.severity}
                           </Badge>
