@@ -1,14 +1,14 @@
 const jwt = require("jsonwebtoken");
 
-const verifyToken = async (req, res,next) => {
+const verifyToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    console.log(authHeader);
-    if(!authHeader){
+    console.log("auth header is : ", authHeader);
+    if (!authHeader) {
       return res.status(401).json({
-        success:false,
-        message:"token not found",
-      })
+        success: false,
+        message: "token not found",
+      });
     }
     const token = authHeader.split(" ")[1];
     // const token = req.cookies.token;
@@ -21,12 +21,12 @@ const verifyToken = async (req, res,next) => {
     const decoded = jwt.verify(token, process.env.TOKEN_KEY_SECRET);
     req.user = {
       id: decoded.id,
-      role:decoded.role,
+      role: decoded.role,
     };
-    console.log("req.user : " ,req.user);
+    console.log("req.user : ", req.user);
     next();
   } catch (err) {
-    console.log("jwt error",err);
+    console.log("jwt error", err);
     return res.status(401).json({
       success: false,
       message: err.message,

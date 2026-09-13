@@ -104,13 +104,19 @@ export default function Login() {
         role: role,
       });
       console.log(response.data.token);
+      const token = response.data.token;
+      if (!token) {
+      throw new Error("Token not received from server");
+    }
       localStorage.setItem("token",response.data.token);
+       console.log("Token saved:", localStorage.getItem("token"));
+    navigate("/user-home-page");
       console.log("Login response:", response);
     } catch (error) {
       console.log("login failed");
       console.log(error.message);
     } finally {
-      navigate("/government-page");
+      // navigate("/user-home-page");
 
       setLoading(false);
     }

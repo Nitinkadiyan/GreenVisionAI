@@ -8,6 +8,7 @@ const {
   getReport,
   updateReport,
   deleteReport,
+  getMyReports,
 } = require("../controllers/reportController.js");
 const { verifyToken } = require("../middleware/authMiddleware.js");
 const upload = require("../middleware/multer.js");
@@ -19,8 +20,8 @@ router.post(
 );
 router.post(
   "/create-report",
-  // verifyToken,
-  // authorizeRoles("citizen"),
+  verifyToken,
+  authorizeRoles("citizen"),
   upload.fields([
     { name: "image", maxCount: 1 },
     { name: "video", maxCount: 1 },
@@ -28,8 +29,20 @@ router.post(
   createReport,
 );
 
-router.get("/get-reports",verifyToken, getAllReports);
-router.get("/get-report/:id", verifyToken,authorizeRoles("citizen"), getReport);
+router.get(
+  "/get-reports",
+  verifyToken,
+  authorizeRoles("government"),
+  getAllReports,
+);
+
+router.get("/my-reports", verifyToken, authorizeRoles("citizen"), getMyReports);
+router.get(
+  "/get-report/:id",
+  verifyToken,
+  authorizeRoles("citizen"),
+  getReport,
+);
 router.patch(
   "/update-report/:id",
   verifyToken,
@@ -39,8 +52,8 @@ router.patch(
 );
 router.delete(
   "/delete-report/:id",
-  authorizeRoles("citizen"),
   verifyToken,
+  authorizeRoles("citizen"),
   deleteReport,
 );
 module.exports = router;
