@@ -1,6 +1,8 @@
 "use client";
 import axios from "axios";
 import { useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+
 import {
   Activity,
   ArrowLeft,
@@ -36,6 +38,8 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { useEffect } from "react";
+import api from "../../api/axios"
 
 const reports = [
   {
@@ -171,6 +175,8 @@ const stats = [
     "bg-lime-50 text-lime-700",
   ],
 ];
+
+
 
 function Badge({ children, tone = "slate" }) {
   const tones = {
@@ -434,6 +440,7 @@ function SectionTitle({ title, subtitle, action, onAction }) {
 }
 
 function Dashboard({ setView, query }) {
+    const navigate = useNavigate();
   const filtered = reports.filter((r) =>
     `${r.title} ${r.category} ${r.location}`
       .toLowerCase()
@@ -456,7 +463,8 @@ function Dashboard({ setView, query }) {
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <button
-              onClick={() => setView("reports")}
+              onClick={() => navigate("/create-report")
+              }
               className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-emerald-700 shadow-lg hover:bg-emerald-50"
             >
               + Add New Report
@@ -540,47 +548,84 @@ function ReportCard({ report, onClick }) {
       className="group flex w-full gap-4 rounded-2xl border border-slate-100 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
     >
       <img
-        src={report.image}
-        alt={report.title}
+        src={report.imageUrl}
+        alt={report.aiAnalysis?.wasteType || "Waste report"}
         className="h-24 w-24 shrink-0 rounded-xl object-cover"
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="truncate font-bold text-slate-800">{report.title}</p>
+            <p className="truncate font-bold text-slate-800">{report.aiAnalysis?.wasteType || "Environmental Report"}</p>
             <p className="mt-1 text-xs font-medium text-emerald-600">
-              {report.category}
+              {report.aiAnalysis?.severity || "Unknown"}Severity
             </p>
           </div>
           <MoreHorizontal size={18} className="shrink-0 text-slate-300" />
         </div>
         <p className="mt-3 flex items-center gap-1 truncate text-xs text-slate-500">
           <MapPin size={13} />
-          {report.location}
+          {report.location?.address ||
+            `${report.location?.latitude ?? "N/A"}, ${report.location?.longitude ?? "N/A"}`}
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Badge tone={tone}>{report.status}</Badge>
-          <span className="text-[11px] text-slate-400">{report.date}</span>
+          <Badge tone={tone}>{report.status|| "Unknown"}</Badge>
+          <span className="text-[11px] text-slate-400">{report.createdAt
+              ? new Date(report.createdAt).toLocaleDateString()
+              : ""}</span>
         </div>
       </div>
     </button>
   );
 }
 
-function ReportsView({ setView, query, setQuery }) {
+function ReportsView({ setView, query, setQuery, setSelectedReport }) {
   const [filter, setFilter] = useState("All");
-  const list = reports.filter(
-    (r) =>
-      (filter === "All" || r.status.includes(filter)) &&
-      `${r.title} ${r.location}`.toLowerCase().includes(query.toLowerCase()),
-  );
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get("/reports/my-reports");
+        console.log("Reports from backend:", response.data);
+        setReports(response.data.reports||[]);
+      } catch (error) {
+        console.log(
+          "Error fetching reports:",
+          error.response?.data || error.message
+        );
+        setError(
+          error.response?.data?.message || "Failed to fetch reports"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReports();
+  }, []);
+    const list = reports.filter(
+    (r) =>{
+      const statusMatch = filter === "All" || r.status?.includes(filter) 
+    const searchText = ` ${r.title || ""} ${r.description || ""} ${r.location?.address || ""} ${r.aiAnalysis?.wasteType || ""} `.toLowerCase();
+    const searchMatch = searchText.includes(query.toLowerCase()); return statusMatch && searchMatch;
+});
+
+  if (loading) {
+    return <div className="p-8">Loading reports...</div>;
+  }
+
+  if (error) {
+    return <div className="p-8 text-red-500">{error}</div>;
+  }
   return (
     <div className="p-5 md:p-8">
       <SectionTitle
         title="My Reports"
         subtitle="A complete record of the issues you have helped surface."
         action="Add New Report"
-        onAction={() => setView("reportDetail")}
+        onAction={() => navigate("/create-report")}
       />
       <div className="mb-5 flex flex-wrap gap-2">
         <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-500">
@@ -590,10 +635,13 @@ function ReportsView({ setView, query, setQuery }) {
             onChange={(e) => setFilter(e.target.value)}
             className="bg-transparent font-semibold outline-none"
           >
-            <option>All</option>
-            <option>Pending</option>
-            <option>Accepted</option>
-            <option>Resolved</option>
+            <option value="All">All</option>
+  <option value="Pending Review">Pending Review</option>
+  <option value="Approved">Approved</option>
+  <option value="Assigned">Assigned</option>
+  <option value="In Progress">In Progress</option>
+  <option value="Resolved">Resolved</option>
+  <option value="Rejected">Rejected</option>
           </select>
         </div>
         <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-400">
@@ -607,36 +655,44 @@ function ReportsView({ setView, query, setQuery }) {
         </div>
       </div>
       <div className="space-y-4">
-        {list.map((r) => (
-          <ReportCard
-            key={r.id}
-            report={r}
-            onClick={() => setView("reportDetail")}
-          />
-        ))}
-      </div>
+  {list.map((r) => (
+    <ReportCard
+      key={r._id}
+      report={r}
+      onClick={() => {
+        setSelectedReport(r);
+        setView("reportDetail");
+      }}
+    />
+  ))}
+</div>
     </div>
   );
 }
 
-function ReportDetail({ setView }) {
-  const report = reports[0];
-  return (
-    <div className="p-5 md:p-8">
-      <button
-        onClick={() => setView("reports")}
-        className="mb-6 flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-emerald-600"
-      >
-        <ArrowLeft size={16} />
-        Back to My Reports
-      </button>
+function ReportDetail({ setView, report }) {
+if (!report) {
+    return (
+      <div className="p-8">
+        <p className="text-slate-500">No report selected.</p>
+        <button
+          onClick={() => setView("reports")}
+          className="mt-3 text-emerald-600 font-semibold"
+        >
+          Back to My Reports
+        </button>
+      </div>
+      );
+     }
+     return(
+      <>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-600">
-            Report #{report.id}
+            Report #{report._id}
           </p>
           <h2 className="mt-2 text-2xl font-bold text-slate-900">
-            {report.title}
+            {report.aiAnalysis?.wasteType || "Environmental Report"}
           </h2>
         </div>
         <Badge tone="blue">{report.status}</Badge>
@@ -645,7 +701,7 @@ function ReportDetail({ setView }) {
         <div className="space-y-6">
           <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
             <img
-              src={report.image}
+              src={report.imageUrl}
               alt={report.title}
               className="h-64 w-full object-cover md:h-80"
             />
@@ -661,15 +717,20 @@ function ReportDetail({ setView }) {
               <div className="space-y-3 text-sm text-slate-600">
                 <p className="flex gap-2">
                   <MapPin size={17} className="text-emerald-600" />
-                  {report.location}
+                  {report.location?.address ||
+  `${report.location?.latitude}, ${report.location?.longitude}`}
                 </p>
                 <p className="flex gap-2">
                   <CalendarDays size={17} className="text-emerald-600" />
-                  Submitted {report.date}
+                  Submitted{" "}
+{report.createdAt
+  ? new Date(report.createdAt).toLocaleDateString()
+  : "Unknown date"}
                 </p>
                 <p className="flex gap-2">
                   <ShieldCheck size={17} className="text-emerald-600" />
-                  12.9716° N, 77.5946° E
+                  {report.location?.latitude}° N,{" "}
+{report.location?.longitude}° E
                 </p>
               </div>
             </div>
@@ -689,22 +750,31 @@ function ReportDetail({ setView }) {
               </div>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {[
-                ["Waste Type", "Plastic"],
-                ["Confidence", "94%"],
-                ["Severity", "High"],
-                ["Estimated Waste", "35 kg"],
-              ].map(([a, b]) => (
-                <div key={a}>
-                  <p className="text-xs text-slate-500">{a}</p>
-                  <p className="mt-1 font-bold text-slate-800">{b}</p>
-                </div>
-              ))}
+<div>
+  <p>Waste Type</p>
+  <p>{report.aiAnalysis?.wasteType || "N/A"}</p>
+</div>
+
+<div>
+  <p>Confidence</p>
+  <p>{report.aiAnalysis?.confidence ?? 0}%</p>
+</div>
+
+<div>
+  <p>Severity</p>
+  <p>{report.aiAnalysis?.severity || "N/A"}</p>
+</div>
+
+<div>
+  <p>Estimated Waste</p>
+  <p>
+    {report.aiAnalysis?.estimatedWasteKg ?? 0} kg
+  </p>
+</div>
             </div>
             <p className="mt-5 text-sm leading-6 text-slate-600">
-              The system identified a significant plastic waste cluster near a
-              public drainage channel. Immediate removal is recommended to
-              prevent waterway contamination.
+             {report.aiAnalysis?.summary ||
+    "No AI summary available for this report."}
             </p>
           </div>
         </div>
@@ -712,10 +782,12 @@ function ReportDetail({ setView }) {
           <Timeline />
           <CleanupPanel />
         </div>
-      </div>
-    </div>
-  );
+        </div>
+        </>
+      
+ );
 }
+
 
 function Timeline() {
   const steps = [
@@ -1248,18 +1320,22 @@ function ContributionView() {
 }
 
 export default function UserDashboard() {
-  const [view, setView] = useState("dashboard");
+  const [searchParams] = useSearchParams();
+  const initialView = searchParams.get("view") || "dashboard";
+  const [view, setView] = useState(initialView);
   const [reportsOpen, setReportsOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logout, setLogout] = useState(false);
   const [query, setQuery] = useState("");
+  const [selectedReport, setSelectedReport] = useState(null);
+
   const content =
     view === "dashboard" ? (
       <Dashboard setView={setView} query={query} />
     ) : view === "reports" ? (
-      <ReportsView setView={setView} query={query} setQuery={setQuery} />
+      <ReportsView setView={setView} query={query} setQuery={setQuery} setSelectedReport={setSelectedReport}/>
     ) : view === "reportDetail" ? (
-      <ReportDetail setView={setView} />
+      <ReportDetail setView={setView} report={selectedReport}/>
     ) : view === "volunteer" || view === "tasks" ? (
       <VolunteerView />
     ) : view === "map" ? (

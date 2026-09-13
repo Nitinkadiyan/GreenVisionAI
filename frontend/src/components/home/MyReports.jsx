@@ -764,6 +764,7 @@
 // export default MyReports;
 "use client";
 import api from "../../api/axios"
+import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
@@ -1027,6 +1028,7 @@ export default function CreateReport() {
     longitude: "",
   });
   const [result, setResult] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(
     () => () => image?.preview && URL.revokeObjectURL(image.preview),
@@ -1195,18 +1197,7 @@ const submit = async () => {
               </p>
             </div>
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              <a
-                href="/reports"
-                className="rounded-xl border border-emerald-200 px-4 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50"
-              >
-                View My Reports
-              </a>
-              <a
-                href="/dashboard"
-                className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
-              >
-                Back to Dashboard
-              </a>
+              <button type="button" onClick={() => navigate("/user-home-page?view=reports")} className="rounded-xl border border-emerald-200 px-4 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50" > View My Reports </button> {/* Dashboard */} <button type="button" onClick={() => navigate("/user-home-page")} className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700" > Back to Dashboard </button>
             </div>
           </div>
         </div>
@@ -1217,12 +1208,12 @@ const submit = async () => {
     <main className="min-h-screen bg-[#f7fbf8] px-4 py-5 text-slate-900 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-7xl">
         <header className="flex items-center justify-between border-b border-emerald-100 pb-5">
-          <a
-            href="/dashboard"
+          <button
+            onClick={()=>navigate("/user-home-page")}
             className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-emerald-700"
           >
-            <ArrowLeft className="size-4" /> Back to Dashboard
-          </a>
+            <ArrowLeft className="size-4"/> Back to Dashboard
+          </button>
           <div className="flex items-center gap-2 text-sm font-bold tracking-tight text-emerald-700">
             <Leaf className="size-5 fill-emerald-100" /> GreenVision AI
           </div>

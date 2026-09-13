@@ -9,6 +9,7 @@ import UserDashboard from "./components/home/Dashboard.jsx";
 import ReportIssue from "./components/home/ReportIssue.jsx";
 import GovernmentDashboard from "./components/govtDashboard/govtMainPage.jsx";
 import ReportSection from "./components/govtDashboard/ReportSection.jsx";
+import CreateReport from "./components/home/MyReports.jsx";
 export default function App() {
   return (
     <Routes>
@@ -20,6 +21,7 @@ export default function App() {
       <Route path="/government-page" element={<GovernmentDashboard />} />
       <Route path="/report-issue" element={<ReportIssue />} />
       <Route path="/check-reports" element={<ReportSection />} />
+      <Route path="/create-report" element={<CreateReport/>}/>
     </Routes>
   );
 }
