@@ -25,7 +25,7 @@ router.post(
 router.get(
   "/clean-up-tasks",
   verifyToken,
-  authorizeRoles("citizen"),
+ 
   getCleanuptasks,
 );
 router.get(

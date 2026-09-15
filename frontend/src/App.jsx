@@ -7,7 +7,7 @@ import Login from "./components/Login.jsx";
 import VerifyAccount from "./components/home/VerifyAccount.jsx";
 import UserDashboard from "./components/home/Dashboard.jsx";
 import ReportIssue from "./components/home/ReportIssue.jsx";
-import GovernmentDashboard from "./components/govtDashboard/govtMainPage.jsx";
+import GovernmentDashboard from "./components/govtDashboard/governmentDashboard.jsx";
 import ReportSection from "./components/govtDashboard/ReportSection.jsx";
 export default function App() {
   return (
