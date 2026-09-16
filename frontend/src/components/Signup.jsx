@@ -101,6 +101,7 @@ export default function SignUp() {
     try {
       setLoading(true);
       const formData = new FormData();
+      console.log("Form name : ",form.name);
       formData.append("name", form.name);
       formData.append("email", form.email);
       formData.append("phone", form.phone);
