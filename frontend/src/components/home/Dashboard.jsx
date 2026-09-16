@@ -39,7 +39,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect } from "react";
-import api from "../../api/axios"
+import api from "../../api/axios";
 
 const reports = [
   {
@@ -176,8 +176,6 @@ const stats = [
   ],
 ];
 
-
-
 function Badge({ children, tone = "slate" }) {
   const tones = {
     green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -195,7 +193,8 @@ function Badge({ children, tone = "slate" }) {
   );
 }
 
-function Avatar({ small = false }) {
+function Avatar({ small = false, user }) {
+  console.log("user : ", user?.name);
   return (
     <div
       className={`${small ? "h-9 w-9" : "h-11 w-11"} overflow-hidden rounded-full bg-emerald-100 ring-2 ring-white`}
@@ -203,7 +202,7 @@ function Avatar({ small = false }) {
       <img
         className="h-full w-full object-cover"
         src="https://i.pravatar.cc/120?img=12"
-        alt="Jatin Kumar"
+        alt="nitin"
       />
     </div>
   );
@@ -217,7 +216,9 @@ function Sidebar({
   mobileOpen,
   setMobileOpen,
   setLogout,
+  user,
 }) {
+  console.log(user);
   const nav = [
     ["dashboard", LayoutDashboard, "Dashboard"],
     ["reports", FileText, "My Reports"],
@@ -268,14 +269,14 @@ function Sidebar({
         </div>
         <div className="mb-6 flex items-center gap-3 rounded-2xl bg-emerald-50/70 p-3">
           <div className="relative">
-            <Avatar small />
+            <Avatar small  />
             <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-emerald-50 bg-emerald-500" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold text-slate-800">
-              Jatin Kumar
+              {user?.name||"New User"}
             </p>
-            <p className="truncate text-xs text-slate-500">Bangalore, India</p>
+            <p className="truncate text-xs text-slate-500">{user?.location?.city || "User City"}</p>
           </div>
           <button
             aria-label="Edit profile"
@@ -367,7 +368,7 @@ function Sidebar({
   );
 }
 
-function Header({ setView, setMobileOpen, query, setQuery }) {
+function Header({ setView, setMobileOpen, query, setQuery, user }) {
   return (
     <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 bg-white/90 px-5 py-4 backdrop-blur md:px-8">
       <div className="flex items-center gap-3">
@@ -412,7 +413,7 @@ function Header({ setView, setMobileOpen, query, setQuery }) {
           <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white" />
         </button>
         <button onClick={() => setView("profile")} aria-label="Open profile">
-          <Avatar small />
+          <Avatar small user={user} />
         </button>
       </div>
     </header>
@@ -440,7 +441,7 @@ function SectionTitle({ title, subtitle, action, onAction }) {
 }
 
 function Dashboard({ setView, query }) {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const filtered = reports.filter((r) =>
     `${r.title} ${r.category} ${r.location}`
       .toLowerCase()
@@ -451,7 +452,7 @@ function Dashboard({ setView, query }) {
       <section className="relative overflow-hidden rounded-3xl bg-linear-to-br from-emerald-700 via-emerald-600 to-teal-500 p-6 text-white shadow-xl shadow-emerald-100 md:p-9">
         <div className="relative z-10 max-w-xl">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold ring-1 ring-white/20">
-            <Zap size={14} /> 
+            <Zap size={14} />
             Small actions. Big impact.
           </div>
           <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
@@ -463,8 +464,7 @@ function Dashboard({ setView, query }) {
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <button
-              onClick={() => navigate("/create-report")
-              }
+              onClick={() => navigate("/create-report")}
               className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-emerald-700 shadow-lg hover:bg-emerald-50"
             >
               + Add New Report
@@ -555,7 +555,9 @@ function ReportCard({ report, onClick }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="truncate font-bold text-slate-800">{report.aiAnalysis?.wasteType || "Environmental Report"}</p>
+            <p className="truncate font-bold text-slate-800">
+              {report.aiAnalysis?.wasteType || "Environmental Report"}
+            </p>
             <p className="mt-1 text-xs font-medium text-emerald-600">
               {report.aiAnalysis?.severity || "Unknown"}Severity
             </p>
@@ -568,10 +570,12 @@ function ReportCard({ report, onClick }) {
             `${report.location?.latitude ?? "N/A"}, ${report.location?.longitude ?? "N/A"}`}
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Badge tone={tone}>{report.status|| "Unknown"}</Badge>
-          <span className="text-[11px] text-slate-400">{report.createdAt
+          <Badge tone={tone}>{report.status || "Unknown"}</Badge>
+          <span className="text-[11px] text-slate-400">
+            {report.createdAt
               ? new Date(report.createdAt).toLocaleDateString()
-              : ""}</span>
+              : ""}
+          </span>
         </div>
       </div>
     </button>
@@ -590,27 +594,26 @@ function ReportsView({ setView, query, setQuery, setSelectedReport }) {
         setLoading(true);
         const response = await api.get("/reports/my-reports");
         console.log("Reports from backend:", response.data);
-        setReports(response.data.reports||[]);
+        setReports(response.data.reports || []);
       } catch (error) {
         console.log(
           "Error fetching reports:",
-          error.response?.data || error.message
+          error.response?.data || error.message,
         );
-        setError(
-          error.response?.data?.message || "Failed to fetch reports"
-        );
+        setError(error.response?.data?.message || "Failed to fetch reports");
       } finally {
         setLoading(false);
       }
     };
     fetchReports();
   }, []);
-    const list = reports.filter(
-    (r) =>{
-      const statusMatch = filter === "All" || r.status?.includes(filter) 
-    const searchText = ` ${r.title || ""} ${r.description || ""} ${r.location?.address || ""} ${r.aiAnalysis?.wasteType || ""} `.toLowerCase();
-    const searchMatch = searchText.includes(query.toLowerCase()); return statusMatch && searchMatch;
-});
+  const list = reports.filter((r) => {
+    const statusMatch = filter === "All" || r.status?.includes(filter);
+    const searchText =
+      ` ${r.title || ""} ${r.description || ""} ${r.location?.address || ""} ${r.aiAnalysis?.wasteType || ""} `.toLowerCase();
+    const searchMatch = searchText.includes(query.toLowerCase());
+    return statusMatch && searchMatch;
+  });
 
   if (loading) {
     return <div className="p-8">Loading reports...</div>;
@@ -636,12 +639,12 @@ function ReportsView({ setView, query, setQuery, setSelectedReport }) {
             className="bg-transparent font-semibold outline-none"
           >
             <option value="All">All</option>
-  <option value="Pending Review">Pending Review</option>
-  <option value="Approved">Approved</option>
-  <option value="Assigned">Assigned</option>
-  <option value="In Progress">In Progress</option>
-  <option value="Resolved">Resolved</option>
-  <option value="Rejected">Rejected</option>
+            <option value="Pending Review">Pending Review</option>
+            <option value="Approved">Approved</option>
+            <option value="Assigned">Assigned</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Rejected">Rejected</option>
           </select>
         </div>
         <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-400">
@@ -655,23 +658,23 @@ function ReportsView({ setView, query, setQuery, setSelectedReport }) {
         </div>
       </div>
       <div className="space-y-4">
-  {list.map((r) => (
-    <ReportCard
-      key={r._id}
-      report={r}
-      onClick={() => {
-        setSelectedReport(r);
-        setView("reportDetail");
-      }}
-    />
-  ))}
-</div>
+        {list.map((r) => (
+          <ReportCard
+            key={r._id}
+            report={r}
+            onClick={() => {
+              setSelectedReport(r);
+              setView("reportDetail");
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
 function ReportDetail({ setView, report }) {
-if (!report) {
+  if (!report) {
     return (
       <div className="p-8">
         <p className="text-slate-500">No report selected.</p>
@@ -682,10 +685,10 @@ if (!report) {
           Back to My Reports
         </button>
       </div>
-      );
-     }
-     return(
-      <>
+    );
+  }
+  return (
+    <>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-600">
@@ -718,19 +721,19 @@ if (!report) {
                 <p className="flex gap-2">
                   <MapPin size={17} className="text-emerald-600" />
                   {report.location?.address ||
-  `${report.location?.latitude}, ${report.location?.longitude}`}
+                    `${report.location?.latitude}, ${report.location?.longitude}`}
                 </p>
                 <p className="flex gap-2">
                   <CalendarDays size={17} className="text-emerald-600" />
                   Submitted{" "}
-{report.createdAt
-  ? new Date(report.createdAt).toLocaleDateString()
-  : "Unknown date"}
+                  {report.createdAt
+                    ? new Date(report.createdAt).toLocaleDateString()
+                    : "Unknown date"}
                 </p>
                 <p className="flex gap-2">
                   <ShieldCheck size={17} className="text-emerald-600" />
-                  {report.location?.latitude}° N,{" "}
-{report.location?.longitude}° E
+                  {report.location?.latitude}° N, {report.location?.longitude}°
+                  E
                 </p>
               </div>
             </div>
@@ -750,31 +753,29 @@ if (!report) {
               </div>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-<div>
-  <p>Waste Type</p>
-  <p>{report.aiAnalysis?.wasteType || "N/A"}</p>
-</div>
+              <div>
+                <p>Waste Type</p>
+                <p>{report.aiAnalysis?.wasteType || "N/A"}</p>
+              </div>
 
-<div>
-  <p>Confidence</p>
-  <p>{report.aiAnalysis?.confidence ?? 0}%</p>
-</div>
+              <div>
+                <p>Confidence</p>
+                <p>{report.aiAnalysis?.confidence ?? 0}%</p>
+              </div>
 
-<div>
-  <p>Severity</p>
-  <p>{report.aiAnalysis?.severity || "N/A"}</p>
-</div>
+              <div>
+                <p>Severity</p>
+                <p>{report.aiAnalysis?.severity || "N/A"}</p>
+              </div>
 
-<div>
-  <p>Estimated Waste</p>
-  <p>
-    {report.aiAnalysis?.estimatedWasteKg ?? 0} kg
-  </p>
-</div>
+              <div>
+                <p>Estimated Waste</p>
+                <p>{report.aiAnalysis?.estimatedWasteKg ?? 0} kg</p>
+              </div>
             </div>
             <p className="mt-5 text-sm leading-6 text-slate-600">
-             {report.aiAnalysis?.summary ||
-    "No AI summary available for this report."}
+              {report.aiAnalysis?.summary ||
+                "No AI summary available for this report."}
             </p>
           </div>
         </div>
@@ -782,12 +783,10 @@ if (!report) {
           <Timeline />
           <CleanupPanel />
         </div>
-        </div>
-        </>
-      
- );
+      </div>
+    </>
+  );
 }
-
 
 function Timeline() {
   const steps = [
@@ -1182,8 +1181,20 @@ function NotificationsView() {
   );
 }
 
-function ProfileView({ setLogout }) {
+function ProfileView({ setLogout, user }) {
+  const navigate = useNavigate();
+  const handleLogout = async () => {
+    console.log("logout function started");
+    try {
+      localStorage.removeItem("token");
+    } catch (error) {
+      console.log(error);
+    } finally {
+      navigate("/login");
+    }
+  };
   const [editing, setEditing] = useState(false);
+
   return (
     <div className="p-5 md:p-8">
       <SectionTitle
@@ -1192,9 +1203,9 @@ function ProfileView({ setLogout }) {
       />
       <div className="max-w-3xl rounded-3xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
         <div className="flex flex-wrap items-center gap-5 border-b border-slate-100 pb-7">
-          <Avatar />
+          <Avatar user={user} />
           <div className="flex-1">
-            <h2 className="text-xl font-bold text-slate-900">Jatin Kumar</h2>
+            <h2 className="text-xl font-bold text-slate-900">{user.name}</h2>
             <p className="mt-1 text-sm text-slate-500">
               Bangalore, India · Citizen
             </p>
@@ -1211,7 +1222,7 @@ function ProfileView({ setLogout }) {
               {editing ? "Save Changes" : "Edit Profile"}
             </button>
             <button
-              onClick={() => setLogout(true)}
+              onClick={handleLogout}
               className="rounded-xl bg-rose-50 px-4 py-2 text-sm font-bold text-rose-600"
             >
               Logout
@@ -1220,13 +1231,13 @@ function ProfileView({ setLogout }) {
         </div>
         <div className="mt-7 grid gap-5 sm:grid-cols-2">
           {[
-            ["Full Name", "Jatin Kumar"],
-            ["Email", "jatin.kumar@example.com"],
-            ["Phone Number", "+91 98765 43210"],
-            ["City", "Bangalore"],
-            ["Location", "Karnataka, India"],
-            ["Member Since", "January 2026"],
-            ["Role", "Citizen"],
+            ["Full Name", user.name],
+            ["Email", user.email],
+            ["Phone Number", user.phone],
+            ["City", user.location.city],
+            ["Location", user.location.city],
+            ["Member Since", user.createdAt],
+            ["Role", user.role],
           ].map(([label, value]) => (
             <label key={label} className="text-sm font-semibold text-slate-600">
               {label}
@@ -1243,7 +1254,7 @@ function ProfileView({ setLogout }) {
   );
 }
 
-function ContributionView() {
+function ContributionView(user) {
   const rows = [
     ["Reports Submitted", "+240"],
     ["Cleanup Tasks Completed", "+700"],
@@ -1299,12 +1310,12 @@ function ContributionView() {
           {leaders.map(([name, score], i) => (
             <div
               key={name}
-              className={`flex items-center gap-4 rounded-xl p-3 ${name === "Jatin Kumar" ? "bg-emerald-50 ring-1 ring-emerald-100" : ""}`}
+              className={`flex items-center gap-4 rounded-xl p-3 ${name === user.name ? "bg-emerald-50 ring-1 ring-emerald-100" : ""}`}
             >
               <span className="w-5 text-center font-bold text-slate-400">
                 #{i + 1}
               </span>
-              <Avatar small />
+              <Avatar small user={user} />
               <span className="flex-1 text-sm font-semibold text-slate-700">
                 {name}
               </span>
@@ -1328,14 +1339,48 @@ export default function UserDashboard() {
   const [logout, setLogout] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedReport, setSelectedReport] = useState(null);
-
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const getUserProfile = async (req, res) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get("http://localhost:5001/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(response);
+      console.log(response.data.user);
+      setUser(response.data.user);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    getUserProfile();
+  }, []);
+  const handleLogout = async () => {
+    console.log("logout function started");
+    try {
+      localStorage.removeItem("token");
+    } catch (error) {
+      console.log(error);
+    } finally {
+      navigate("/login");
+    }
+  };
   const content =
     view === "dashboard" ? (
       <Dashboard setView={setView} query={query} />
     ) : view === "reports" ? (
-      <ReportsView setView={setView} query={query} setQuery={setQuery} setSelectedReport={setSelectedReport}/>
+      <ReportsView
+        setView={setView}
+        query={query}
+        setQuery={setQuery}
+        setSelectedReport={setSelectedReport}
+      />
     ) : view === "reportDetail" ? (
-      <ReportDetail setView={setView} report={selectedReport}/>
+      <ReportDetail setView={setView} report={selectedReport} />
     ) : view === "volunteer" || view === "tasks" ? (
       <VolunteerView />
     ) : view === "map" ? (
@@ -1343,9 +1388,9 @@ export default function UserDashboard() {
     ) : view === "notifications" ? (
       <NotificationsView />
     ) : view === "profile" ? (
-      <ProfileView setLogout={setLogout} />
+      <ProfileView setLogout={setLogout} user={user} />
     ) : (
-      <ContributionView />
+      <ContributionView user={user}/>
     );
   return (
     <div className="min-h-screen bg-[#f7faf8] text-slate-900">
@@ -1358,10 +1403,11 @@ export default function UserDashboard() {
           mobileOpen,
           setMobileOpen,
           setLogout,
+          user,
         }}
       />
       <div className="min-h-screen lg:pl-72">
-        <Header {...{ setView, setMobileOpen, query, setQuery }} />
+        <Header {...{ setView, setMobileOpen, query, setQuery,user }} />
         <main>{content}</main>
       </div>
       {logout && (
@@ -1393,7 +1439,7 @@ export default function UserDashboard() {
                 Cancel
               </button>
               <button
-                onClick={() => setLogout(false)}
+                onClick={handleLogout}
                 className="flex-1 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white"
               >
                 Logout

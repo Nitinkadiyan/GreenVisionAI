@@ -32,7 +32,7 @@ const Signup = async (req, res) => {
       email,
       phone,
       password,
-      name,
+     name: name,
       otp,
       role,
       location: {

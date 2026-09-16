@@ -6,6 +6,10 @@ import {
   AlertTriangle,
   ArrowUpRight,
   Bell,
+  Mail,
+  Phone,
+  
+  Save,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -36,16 +40,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-const navItems = [
-  { id: "dashboard", label: "Dashboard", icon: Activity },
-  { id: "reports", label: "Reports", icon: FileSearch, count: 86 },
-  { id: "tasks", label: "Cleanup Tasks", icon: ClipboardCheck, count: 14 },
-  { id: "map", label: "Environmental Map", icon: Globe2 },
-  { id: "volunteers", label: "Volunteers", icon: Users },
-  { id: "rewards", label: "Rewards", icon: Sparkles },
-  { id: "notifications", label: "Notifications", icon: Bell, count: 7 },
-  { id: "settings", label: "Settings", icon: Settings },
-];
+
 const notifications = [
   {
     title: "New critical report submitted",
@@ -74,44 +69,6 @@ const notifications = [
     time: "2 hrs ago",
     type: "clock",
     unread: false,
-  },
-];
-
-const stats = [
-  {
-    label: "Total Reports",
-    value: "1,248",
-    detail: "+12.4% this month",
-    icon: FileSearch,
-    color: "emerald",
-  },
-  {
-    label: "Pending Review",
-    value: "86",
-    detail: "Requires attention",
-    icon: Clock3,
-    color: "amber",
-  },
-  {
-    label: "In Progress",
-    value: "143",
-    detail: "Active operations",
-    icon: Activity,
-    color: "sky",
-  },
-  {
-    label: "Resolved",
-    value: "982",
-    detail: "+18.2% this month",
-    icon: CheckCircle2,
-    color: "violet",
-  },
-  {
-    label: "Critical Issues",
-    value: "24",
-    detail: "Immediate attention",
-    icon: AlertTriangle,
-    color: "rose",
   },
 ];
 
@@ -154,7 +111,32 @@ export default function governmentDashboard() {
   const [toast, setToast] = useState("");
   const [reportState, setReportState] = useState([]);
   const [cleanupTasks, setCleanupTasks] = useState([]);
+  const [profile, setProfile] = useState({
+    name: "Governement Officer",
+    role: "Municipal Environmental Officer",
+    district: "Karnal",
+    email: "kadiyanjatin99@gmail.com",
+    phone: "8295048494",
+  });
   const navigate = useNavigate();
+  const TotalReports = reportState.length;
+  const TotalCleanuptasks = cleanupTasks.length;
+  const navItems = [
+    { id: "dashboard", label: "Dashboard", icon: Activity },
+    { id: "reports", label: "Reports", icon: FileSearch, count: TotalReports },
+    {
+      id: "tasks",
+      label: "Cleanup Tasks",
+      icon: ClipboardCheck,
+      count: TotalCleanuptasks,
+    },
+    { id: "map", label: "Environmental Map", icon: Globe2 },
+    { id: "volunteers", label: "Volunteers", icon: Users },
+    { id: "rewards", label: "Rewards", icon: Sparkles },
+    { id: "notifications", label: "Notifications", icon: Bell, count: 7 },
+    { id: "settings", label: "Settings", icon: Settings },
+  ];
+
   const handleLogout = async () => {
     console.log("logout function started");
     try {
@@ -162,6 +144,7 @@ export default function governmentDashboard() {
     } catch (error) {
       console.log(error);
     } finally {
+      setTimeout(showToast("Logged Out Successfully"), 2000);
       navigate("/login");
     }
   };
@@ -233,7 +216,6 @@ export default function governmentDashboard() {
       }),
     [reportState, search, reportTab],
   );
-
   const showToast = (message) => {
     setToast(message);
     window.setTimeout(() => setToast(""), 2600);
@@ -244,7 +226,7 @@ export default function governmentDashboard() {
   };
   const createCleanupTask = async (taskData) => {
     try {
-      console.log("POSt request starting");
+      console.log("Post request starting");
       const token = localStorage.getItem("token");
       const response = await axios.post(
         "http://localhost:5001/volunteer/create-cleanup-task",
@@ -315,7 +297,7 @@ export default function governmentDashboard() {
         </nav>
         <div className="border-t border-white/10 p-3">
           <button
-            onClick={() => showToast("Signed out safely")}
+            onClick={handleLogout}
             title={collapsed ? "Logout" : undefined}
             className={`flex h-11 w-full items-center gap-3 rounded-xl px-3 text-[13px] font-medium text-emerald-100/55 transition hover:bg-white/8 hover:text-white ${collapsed ? "justify-center" : ""}`}
           >
@@ -423,6 +405,16 @@ export default function governmentDashboard() {
               setReadAll={setReadAll}
               readAll={readAll}
               filteredReports={filteredReports}
+              cleanupTasks={cleanupTasks}
+              reports={reportState}
+            />
+          )}
+          {active === "settings" && (
+            <Profile
+              profile={profile}
+              setProfile={setProfile}
+              notify={showToast}
+              chooseNav={chooseNav}
             />
           )}
           {active === "reports" && (
@@ -503,7 +495,61 @@ function Dashboard({
   setReadAll,
   readAll,
   filteredReports,
+  cleanupTasks,
+  reports,
 }) {
+  const totalReports = reports.length;
+  const pendingReports = reports.filter(
+    (report) => report.status == "Pending Review",
+  ).length;
+  const resolvedReports = reports.filter(
+    (report) => report.status == "Resolved",
+  ).length;
+  const criticalReports = reports.filter(
+    (report) => report.status == "Critical",
+  ).length;
+  const inProgressReports = reports.filter(
+    (report) => report.status == "In progress",
+  ).length;
+
+  const stats = [
+    {
+      label: "Total Reports",
+      value: totalReports,
+      detail: "+12.4% this month",
+      icon: FileSearch,
+      color: "emerald",
+    },
+    {
+      label: "Pending Review",
+      value: pendingReports,
+      detail: "Requires attention",
+      icon: Clock3,
+      color: "amber",
+    },
+    {
+      label: "In Progress",
+      value: inProgressReports,
+      detail: "Active operations",
+      icon: Activity,
+      color: "sky",
+    },
+    {
+      label: "Resolved",
+      value: resolvedReports,
+      detail: "+18.2% this month",
+      icon: CheckCircle2,
+      color: "violet",
+    },
+    {
+      label: "Critical Issues",
+      value: criticalReports,
+      detail: "Immediate attention",
+      icon: AlertTriangle,
+      color: "rose",
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-7">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -730,6 +776,10 @@ function Reports({
     "Resolved",
     "Critical",
   ];
+  const totalReports = visibleReports.length;
+  const pendingReports = visibleReports.filter(
+    (report) => report.status === "Pending Review",
+  ).length;
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -784,9 +834,9 @@ function Reports({
               className={`ml-1 ${reportTab === tab ? "text-emerald-200" : "text-slate-400"}`}
             >
               {tab === "All"
-                ? "1,248"
+                ? visibleReports.length
                 : tab === "Pending Review"
-                  ? "86"
+                  ? pendingReports
                   : tab === "Critical"
                     ? "24"
                     : "—"}
@@ -853,8 +903,10 @@ function ReportCard({ report, onReview, onTask }) {
           {report.description}
         </p>
         <div className="mt-4 flex items-center gap-1.5 text-xs text-slate-500">
-          <MapPin size={14} className="text-emerald-600" /> {report.address}
-          <span className="text-slate-300">•</span> {report.lat}, {report.lng}
+          <MapPin size={14} className="text-emerald-600" />{" "}
+          {report.location.latitude}
+          <span className="text-slate-300">•</span> {report.location.latitude},{" "}
+          {report.location.longitude}
         </div>
         <div className="mt-5 grid grid-cols-3 gap-2 border-y border-slate-100 py-4">
           <div>
@@ -907,16 +959,24 @@ function ReportCard({ report, onReview, onTask }) {
   );
 }
 
-function Tasks({ onCreate, cleanupTasks,handleCreate }) {
+function Tasks({ onCreate, cleanupTasks, handleCreate }) {
+  const [taskFilter, setTaskFilter] = useState("All");
   const filters = [
     "All",
-    "Available",
-    "Assigned",
-    "In Progress",
-    "Completion Submitted",
-    "Under Review",
-    "Completed",
+    "available",
+    "assigned",
+    "in-progress",
+    "completion-submitted",
+    "under-review",
+    "completed",
+    "cancelled",
   ];
+
+  const filteredTasks =
+    taskFilter === "All"
+      ? cleanupTasks
+      : cleanupTasks.filter((task) => task.status === taskFilter);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -939,7 +999,8 @@ function Tasks({ onCreate, cleanupTasks,handleCreate }) {
         {filters.map((filter) => (
           <button
             key={filter}
-            className={`whitespace-nowrap rounded-full px-3.5 py-2 text-xs font-bold ${filter === "All" ? "bg-[#073b35] text-white" : "bg-white text-slate-500 hover:bg-emerald-50 hover:text-emerald-700"}`}
+            onClick={() => setTaskFilter(filter)}
+            className={`whitespace-nowrap rounded-full px-3.5 py-2 text-xs font-bold ${filter === taskFilter ? "bg-[#073b35] text-white" : "bg-white text-slate-500 hover:bg-emerald-50 hover:text-emerald-700"}`}
           >
             {filter}
           </button>
@@ -955,7 +1016,7 @@ function Tasks({ onCreate, cleanupTasks,handleCreate }) {
           <span>Volunteer</span>
         </div>
         <div className="flex flex-col">
-          {cleanupTasks.map((task) => (
+          {filteredTasks.map((task) => (
             <div
               key={task._id}
               className="grid gap-3 border-b border-slate-100 px-5 py-4 last:border-0 md:grid-cols-[1fr_1fr_1.4fr_0.8fr_1fr_1fr] md:items-center md:gap-4"
@@ -1036,7 +1097,94 @@ function Placeholder({ active, setActive }) {
     </div>
   );
 }
-
+function Profile({ profile, setProfile, notify, chooseNav }) {
+  const [draft, setDraft] = useState(profile);
+  return (
+    <>
+      <div className="mb-6">
+  <p className="text-sm font-semibold text-green-600">
+    Account center
+  </p>
+  <h1 className="mt-1 text-3xl font-bold text-slate-900">
+    My profile
+  </h1>
+</div>
+      <div className="grid gap-6 lg:grid-cols-[.7fr_1.3fr]">
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="flex size-20 items-center justify-center rounded-3xl bg-primary text-2xl font-bold text-primary-foreground">
+            GO
+          </div>
+          <h2 className="mt-5 text-2xl font-bold">{profile.name}</h2>
+          <p className="mt-1 text-muted-foreground">{profile.role}</p>
+          <div className="mt-6 flex flex-col gap-3 text-sm">
+            <p>
+              <MapPin className="mr-2 inline text-primary" size={16} />
+              {profile.district}
+            </p>
+            <p>
+              <Mail className="mr-2 inline text-primary" size={16} />
+              {profile.email}
+            </p>
+            <p>
+              <Phone className="mr-2 inline text-primary" size={16} />
+              {profile.phone}
+            </p>
+          </div>
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-muted p-3">
+              <p className="text-xs text-muted-foreground">Reports reviewed</p>
+              <b className="text-xl">128</b>
+            </div>
+            <div className="rounded-xl bg-muted p-3">
+              <p className="text-xs text-muted-foreground">Tasks published</p>
+              <b className="text-xl">46</b>
+            </div>
+          </div>
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setProfile(draft);
+            notify("Profile details saved");
+          }}
+          className="rounded-2xl border border-border bg-card p-6"
+        >
+          <h3 className="text-lg font-bold">Edit account details</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Keep your civic operations profile up to date.
+          </p>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {[
+              ["name", "Full name"],
+              ["role", "Role"],
+              ["district", "District"],
+              ["email", "Email"],
+              ["phone", "Phone"],
+            ].map(([key, label]) => (
+              <label
+                className="flex flex-col gap-2 text-sm font-semibold"
+                key={key}
+              >
+                {label}
+                <input
+                  value={draft[key]}
+                  onChange={(e) =>
+                    setDraft({ ...draft, [key]: e.target.value })
+                  }
+                  className="rounded-xl border border-input bg-background px-3 py-2.5 font-normal outline-none focus:ring-2 focus:ring-ring"
+                />
+              </label>
+            ))}
+          </div>
+          <button className="mt-6 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground">
+            <Save className="mr-2 inline" size={16} />
+            Save profile
+          </button>
+        </form>
+      </div>
+    </>
+  );
+}
 function ReportModal({ report, onClose, onTask, onAction }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 p-0 backdrop-blur-sm sm:items-center sm:p-5">
@@ -1194,32 +1342,30 @@ function ReportModal({ report, onClose, onTask, onAction }) {
   );
 }
 
-function TaskModal({ report, onClose, onCreated,onCreate }) {
-     const [reward, setReward] = useState("");
+function TaskModal({ report, onClose, onCreated, onCreate }) {
+  const [reward, setReward] = useState("");
   const [deadline, setDeadline] = useState("");
   const [guideline, setGuideline] = useState("");
   const [status, setStatus] = useState("Available");
   const [reportId, setReportId] = useState(report?._id || "");
   const [loading, setLoading] = useState(false);
-    const handleCreate = async () => {
+  const handleCreate = async () => {
     try {
       console.log("nikku");
       const taskData = {
         report: reportId,
         reward: { amount: Number(reward) },
-        guideline:guideline,
-        deadline:deadline,
-        status:status,
-
+        guideline: guideline,
+        deadline: deadline,
+        status: status,
       };
-      
-      console.log("creating task",taskData);
+
+      console.log("creating task", taskData);
       await onCreate(taskData);
       console.log("onCreate created");
       await onCreated();
-      
     } catch (error) {
-      console.log("task creation failed : ",error);
+      console.log("task creation failed : ", error);
     }
   };
   return (
@@ -1246,8 +1392,8 @@ function TaskModal({ report, onClose, onCreated,onCreate }) {
           <label className="flex flex-col gap-2 text-xs font-bold text-slate-600">
             Report ID
             <input
-            value={reportId}
-            onChange={(e)=>setReportId(e.target.value)}
+              value={reportId}
+              onChange={(e) => setReportId(e.target.value)}
               placeholder="Select an approved report"
               defaultValue={report?._id || ""}
               className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-normal outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
@@ -1257,8 +1403,8 @@ function TaskModal({ report, onClose, onCreated,onCreate }) {
             <label className="flex flex-col gap-2 text-xs font-bold text-slate-600">
               Reward
               <input
-              value={reward}
-              onChange={(e)=>setReward(e.target.value)}
+                value={reward}
+                onChange={(e) => setReward(e.target.value)}
                 placeholder="Enter the reward"
                 className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-normal outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
               />
@@ -1266,8 +1412,10 @@ function TaskModal({ report, onClose, onCreated,onCreate }) {
             <label className="flex flex-col gap-2 text-xs font-bold text-slate-600">
               Deadline
               <input
-              value={deadline}
-              onChange={(e)=>{setDeadline(e.target.value)}}
+                value={deadline}
+                onChange={(e) => {
+                  setDeadline(e.target.value);
+                }}
                 type="date"
                 placeholder="Enter the deadline"
                 className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-normal outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
@@ -1277,17 +1425,19 @@ function TaskModal({ report, onClose, onCreated,onCreate }) {
           <label className="flex flex-col gap-2 text-xs font-bold text-slate-600">
             Cleanup guidelines
             <textarea
-            value={guideline}
-            onChange={(e)=>setGuideline(e.target.value)}
+              value={guideline}
+              onChange={(e) => setGuideline(e.target.value)}
               placeholder="Enter Suitable Guidelines"
               className="min-h-24 rounded-xl border border-slate-200 p-3 text-sm font-normal outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
             />
           </label>
           <label className="flex flex-col gap-2 text-xs font-bold text-slate-600">
             Task status
-            <select 
-            value={status}
-            onChange={(e)=>setStatus(e.target.value)}className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal outline-none focus:border-emerald-400">
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal outline-none focus:border-emerald-400"
+            >
               <option>Available</option>
               <option>Assigned</option>
               <option>In Progress</option>
