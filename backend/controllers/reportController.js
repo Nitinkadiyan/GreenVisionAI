@@ -111,9 +111,8 @@ const createReport = async (req, res) => {
 
 const getAllReports = async (req, res) => {
   try {
-    
     const reports = await Report.find().sort({ createdAt: -1 });
-    console.log("reports in backend:",reports);
+    console.log("reports in backend:", reports);
     return res.status(200).json({
       success: true,
       reports,
@@ -143,6 +142,30 @@ const getReport = async (req, res) => {
     });
   } catch (e) {
     console.log(e);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+const getMyReports = async (req, res) => {
+  try {
+    const reports = await Report.find({ userId: req.user.id }).sort({
+      createdAt: -1,
+    });
+    if (!reports) {
+      return res.status(404).json({
+        success: false,
+        message: "No reports found!",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "reports fetched successfully!",
+      reports,
+    });
+  } catch (e) {
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -269,4 +292,5 @@ module.exports = {
   updateReport,
   deleteReport,
   deleteAllReports,
+  getMyReports,
 };
