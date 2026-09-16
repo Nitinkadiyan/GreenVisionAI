@@ -17,6 +17,7 @@ import {
   Landmark,
   HeartHandshake,
 } from "lucide-react";
+import Navbar from "./Navbar";
 import { useLocation } from "react-router-dom";
 import loginIllustration from "../assets/loginpage.jpg";
 import { useNavigate } from "react-router-dom";
@@ -130,6 +131,8 @@ export default function Login() {
     }`;
 
   return (
+    <><Navbar/>
+   
     <div className="relative min-h-screen overflow-hidden bg-background">
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="blob absolute -top-32 -left-24 h-96 w-96 rounded-full bg-primary/25" />
@@ -402,7 +405,7 @@ export default function Login() {
             <p className="mt-7 text-center text-sm text-muted-foreground">
               Don&apos;t have an account?{" "}
               <a
-                href="#create-account"
+                href="/signup"
                 className="font-semibold text-primary transition-opacity duration-200 hover:opacity-75"
               >
                 Create Account
@@ -412,5 +415,6 @@ export default function Login() {
         </motion.section>
       </div>
     </div>
+     </>
   );
 }

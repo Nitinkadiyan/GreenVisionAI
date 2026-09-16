@@ -239,15 +239,14 @@ export default function GovernmentDashboard() {
       navigate("/login");
     }
   };
-  useEffect( () => {
+  useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-       
       navigate("/login");
-notify("Please Login First");
-      
+      notify("Please Login First");
     }
     getAllReports();
+    getAllCleanups();
   }, []);
   const notify = (message) => {
     setToast(message);
@@ -260,12 +259,25 @@ notify("Please Login First");
     setSelected(null);
     notify(`Report ${id} marked ${status.toLowerCase()}.`);
   };
-
+  const getAllCleanups = async () => {
+    console.log("nikku doing work");
+    const token = localStorage.getItem("token");
+    const response = await axios.get(
+      "http://localhost:5001/volunteer/clean-up-tasks",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+    console.log("nikkku not doing");
+    console.log(response);
+  };
   const getAllReports = async () => {
     try {
       const token = localStorage.getItem("token");
-      console.log("token:", token);
-      console.log("before axios req");
+      // console.log("token:", token);
+      // console.log("before axios req");
 
       const response = await axios.get(
         "http://localhost:5001/reports/get-reports",
@@ -275,8 +287,8 @@ notify("Please Login First");
           },
         },
       );
-      console.log("after axios req");
-      console.log(response);
+      // console.log("after axios req");
+      // console.log(response);
 
       setReportState(response.data.reports);
 
@@ -499,7 +511,7 @@ notify("Please Login First");
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-6">
             <StatCard
               label="Total Reports"
-              value="1,248"
+              value={filtered.length}
               trend="12.4%"
               note="vs. last month"
               icon={FileCheck2}
@@ -774,7 +786,7 @@ notify("Please Login First");
                   >
                     <div className="flex gap-3">
                       <img
-                        src={r.image}
+                        src={r.imageUrl}
                         alt="report"
                         className="h-16 w-20 rounded-lg object-cover"
                       />
@@ -1420,37 +1432,37 @@ notify("Please Login First");
               </div>
               <div className="grid gap-5 p-5 md:grid-cols-[.9fr_1.1fr]">
                 <img
-                  src={selected.image}
+                  src={selected.imageUrl}
                   alt="Report evidence"
                   className="h-52 w-full rounded-xl object-cover"
                 />
                 <div>
                   <div className="flex items-center justify-between">
                     <h3 className="font-bold text-slate-900">
-                      {selected.issue}
+                      {selected.description}
                     </h3>
                     <Badge tone="green">AI analyzed</Badge>
                   </div>
                   <p className="mt-3 text-sm leading-6 text-slate-500">
-                    {selected.summary}
+                    {selected.aiAnalysis.summary}
                   </p>
                   <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
                     <div>
                       <span className="text-slate-400">Location</span>
                       <b className="mt-1 block text-slate-800">
-                        {selected.location}
+                        {selected.location.latitude}
                       </b>
                     </div>
                     <div>
                       <span className="text-slate-400">AI confidence</span>
                       <b className="mt-1 block text-emerald-700">
-                        {selected.confidence}
+                        {selected.aiAnalysis.confidence}
                       </b>
                     </div>
                     <div>
                       <span className="text-slate-400">Severity</span>
                       <b className="mt-1 block text-red-600">
-                        {selected.severity}
+                        {selected.aiAnalysis.severity}
                       </b>
                     </div>
                     <div>
@@ -1465,9 +1477,7 @@ notify("Please Login First");
                   AI analysis
                 </p>
                 <p className="mt-1 text-xs leading-5 text-emerald-700">
-                  High environmental risk detected. Suggested authority:
-                  Municipal Solid Waste Department. Recommended response: within
-                  24 hours.
+                  {selected.aiAnalysis.environmentalRisk}
                 </p>
               </div>
               <div className="flex flex-wrap justify-end gap-2 p-5">

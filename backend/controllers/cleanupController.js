@@ -27,7 +27,7 @@ const createCleanupTask = async (req, res) => {
     const cleanupTask = await CleanupTask.create({
       report,
       reward: {
-        amount: reward,
+        amount: reward.amount,
       },
       guideline,
       deadline,
@@ -50,9 +50,7 @@ const createCleanupTask = async (req, res) => {
 
 const getCleanuptasks = async (req, res) => {
   try {
-    const cleanupTasks = await CleanupTask.find({
-      status: "available",
-    })
+    const cleanupTasks = await CleanupTask.find()
       .populate({
         path: "report",
         select: "image description",

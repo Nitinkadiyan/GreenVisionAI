@@ -4,11 +4,11 @@ import { useNavigate } from "react-router-dom";
 
 
 const links = [
-  { label: "Home", href: "#home" },
-  { label: "Features", href: "#features" },
-  { label: "Community", href: "#community" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Impact", href: "#impact" },
+  { label: "Home", href: "/#home" },
+  { label: "Features", href: "/#features" },
+  { label: "Community", href: "/#community" },
+  { label: "How It Works", href: "/#how-it-works" },
+  { label: "Impact", href: "/#impact" },
 ];
 
 export default function Navbar() {
