@@ -31,7 +31,7 @@ router.get(
 router.get(
   "/clean-up-task/:id",
   verifyToken,
-  authorizeRoles("citizen"),
+ 
   getCleanupTaskById,
 );
 router.patch(

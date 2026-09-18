@@ -269,14 +269,16 @@ function Sidebar({
         </div>
         <div className="mb-6 flex items-center gap-3 rounded-2xl bg-emerald-50/70 p-3">
           <div className="relative">
-            <Avatar small  />
+            <Avatar small />
             <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-emerald-50 bg-emerald-500" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold text-slate-800">
-              {user?.name||"New User"}
+              {user?.name || "New User"}
             </p>
-            <p className="truncate text-xs text-slate-500">{user?.location?.city || "User City"}</p>
+            <p className="truncate text-xs text-slate-500">
+              {user?.location?.city || "User City"}
+            </p>
           </div>
           <button
             aria-label="Edit profile"
@@ -866,10 +868,62 @@ function CleanupPanel() {
 }
 
 function VolunteerView() {
-  const [tasks, setTasks] = useState(cleanupTasks);
+  const [tasks, setTasks] = useState([]);
   const [active, setActive] = useState(null);
   const update = (id, status) =>
-    setTasks(tasks.map((t) => (t.id === id ? { ...t, status } : t)));
+    setTasks(tasks.map((t) => (t._id === id ? { ...t, status } : t)));
+  const getCleanupTasks = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        "http://localhost:5001/volunteer/clean-up-tasks",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      console.log(response.data.cleanupTasks);
+      console.log("i have some issue with bat");
+      setTasks(response.data.cleanupTasks);
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+    getCleanupTasks();
+  }, []);
+  const acceptTask = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+      const response = await axios.patch(
+        `http://localhoast:5001/volunteer/${id}/accept`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      console.log(response);
+      setTasks((currentTasks) =>
+        currentTasks.map((task) => {
+          task._id === id ? response.data.cleanupTask : task;
+        }),
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  };
   return (
     <div className="p-5 md:p-8">
       <SectionTitle
@@ -884,7 +938,7 @@ function VolunteerView() {
       <div className="grid gap-5 lg:grid-cols-2">
         {tasks.map((task) => (
           <div
-            key={task.id}
+            key={task._id}
             className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm"
           >
             <div className="flex items-start justify-between gap-3">
@@ -910,7 +964,9 @@ function VolunteerView() {
             <div className="mt-6 grid grid-cols-2 gap-4 rounded-2xl bg-slate-50 p-4">
               <div>
                 <p className="text-xs text-slate-400">Reward</p>
-                <p className="mt-1 font-bold text-emerald-700">{task.reward}</p>
+                <p className="mt-1 font-bold text-emerald-700">
+                  {task.reward.amount}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-slate-400">Deadline</p>
@@ -920,9 +976,9 @@ function VolunteerView() {
               </div>
             </div>
             <div className="mt-5 flex gap-3">
-              {task.status === "Available" && (
+              {task.status === "available" && (
                 <button
-                  onClick={() => update(task.id, "Accepted")}
+                  onClick={() => acceptTask(task._id)}
                   className="flex-1 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700"
                 >
                   Accept Task
@@ -930,7 +986,7 @@ function VolunteerView() {
               )}
               {task.status === "Accepted" && (
                 <button
-                  onClick={() => update(task.id, "In Progress")}
+                  onClick={() => update(task._id, "In Progress")}
                   className="flex-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white"
                 >
                   Start Task
@@ -938,7 +994,7 @@ function VolunteerView() {
               )}
               {task.status === "In Progress" && (
                 <button
-                  onClick={() => setActive(task.id)}
+                  onClick={() => setActive(task._id)}
                   className="flex-1 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white"
                 >
                   Submit Completion
@@ -946,7 +1002,7 @@ function VolunteerView() {
               )}
               {task.status === "Assigned" && (
                 <button
-                  onClick={() => update(task.id, "Accepted")}
+                  onClick={() => update(task._id, "Accepted")}
                   className="flex-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white"
                 >
                   Accept Assigned Task
@@ -961,7 +1017,7 @@ function VolunteerView() {
                 {task.status}
               </p>
             )}
-            {active === task.id && (
+            {active === task._id && (
               <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
                 <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-emerald-300 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">
                   <Upload size={16} />
@@ -974,7 +1030,7 @@ function VolunteerView() {
                 />
                 <button
                   onClick={() => {
-                    update(task.id, "Under Government Review");
+                    update(task._id, "Under Government Review");
                     setActive(null);
                   }}
                   className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white"
@@ -1390,7 +1446,7 @@ export default function UserDashboard() {
     ) : view === "profile" ? (
       <ProfileView setLogout={setLogout} user={user} />
     ) : (
-      <ContributionView user={user}/>
+      <ContributionView user={user} />
     );
   return (
     <div className="min-h-screen bg-[#f7faf8] text-slate-900">
@@ -1407,7 +1463,7 @@ export default function UserDashboard() {
         }}
       />
       <div className="min-h-screen lg:pl-72">
-        <Header {...{ setView, setMobileOpen, query, setQuery,user }} />
+        <Header {...{ setView, setMobileOpen, query, setQuery, user }} />
         <main>{content}</main>
       </div>
       {logout && (
