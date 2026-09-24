@@ -32,7 +32,7 @@ router.post(
 router.get(
   "/get-reports",
   verifyToken,
-  authorizeRoles("government"),
+  authorizeRoles("citizen"),
   getAllReports,
 );
 

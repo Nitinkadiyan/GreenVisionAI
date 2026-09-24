@@ -8,7 +8,6 @@ import {
   Bell,
   Mail,
   Phone,
-  
   Save,
   Check,
   CheckCircle2,
@@ -94,7 +93,7 @@ function statusTone(status) {
   if (status === "Critical" || status === "Escalated") return "rose";
   if (status === "Pending Review" || status === "Under Review") return "amber";
   if (status === "Approved" || status === "Completed") return "emerald";
-  if (status === "In Progress") return "sky";
+  if (status === "In-Progress") return "sky";
   return "slate";
 }
 
@@ -111,13 +110,7 @@ export default function governmentDashboard() {
   const [toast, setToast] = useState("");
   const [reportState, setReportState] = useState([]);
   const [cleanupTasks, setCleanupTasks] = useState([]);
-  const [profile, setProfile] = useState({
-    name: "Governement Officer",
-    role: "Municipal Environmental Officer",
-    district: "Karnal",
-    email: "kadiyanjatin99@gmail.com",
-    phone: "8295048494",
-  });
+  const [profile, setProfile] = useState(null);
   const navigate = useNavigate();
   const TotalReports = reportState.length;
   const TotalCleanuptasks = cleanupTasks.length;
@@ -136,7 +129,55 @@ export default function governmentDashboard() {
     { id: "notifications", label: "Notifications", icon: Bell, count: 7 },
     { id: "settings", label: "Settings", icon: Settings },
   ];
-
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+  const rejectReport = async (reportId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.patch(
+        `http://localhost:5001/volunteer/reports/${reportId}/status`,
+        { status: "Rejected" },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      console.log("rejected", response);
+      setReportState((currentReports) =>
+        currentReports.map((report) =>
+          report._id === reportId ? { ...report, status: "Rejected" } : report,
+        ),
+      );
+      setSelectedReport(null);
+      showToast("report rejected successfully");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const getUserProfile = async (req, res) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get("http://localhost:5001/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(response);
+      console.log(response.data.user);
+      setProfile(response.data.user);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    getUserProfile();
+  }, []);
   const handleLogout = async () => {
     console.log("logout function started");
     try {
@@ -186,7 +227,7 @@ export default function governmentDashboard() {
         },
       );
 
-      // console.log("FULL RESPONSE:", response.data);
+      console.log("FULL RESPONSE:", response.data);
       // console.log("REPORTS:", response.data.reports);
 
       setReportState(response.data.reports || []);
@@ -246,6 +287,40 @@ export default function governmentDashboard() {
         error.response?.data || error,
       );
       throw error;
+    }
+  };
+  const approveReport = async (reportId) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.patch(
+        `http://localhost:5001/volunteer/reports/${reportId}/status`,
+        {
+          status: "Approved",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      console.log("Report approved:", response.data);
+
+      // Update frontend immediately
+      setReportState((currentReports) =>
+        currentReports.map((report) =>
+          report._id === reportId ? { ...report, status: "Approved" } : report,
+        ),
+      );
+
+      setSelectedReport(null);
+      showToast("Report approved successfully");
+    } catch (error) {
+      console.log(
+        "Approve report error:",
+        error.response?.data || error.message,
+      );
     }
   };
   return (
@@ -333,7 +408,7 @@ export default function governmentDashboard() {
               </p>
               <h1 className="text-lg font-bold tracking-tight sm:text-xl">
                 {active === "dashboard"
-                  ? "Good morning, Officer"
+                  ? `Good Morning , ${profile?.name || "Officer"}`
                   : navItems.find((item) => item.id === active)?.label}
               </h1>
             </div>
@@ -364,12 +439,14 @@ export default function governmentDashboard() {
                 className="flex items-center gap-2 rounded-xl p-1.5 transition hover:bg-white"
               >
                 <div className="flex size-9 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800">
-                  GO
+                  {profile?.name?.charAt(0).toUpperCase() || "GO"}
                 </div>
                 <div className="hidden text-left sm:block">
-                  <p className="text-xs font-bold">Government Officer</p>
+                  <p className="text-xs font-bold">
+                    {profile?.name || "Government Officer"}
+                  </p>
                   <p className="text-[10px] text-slate-400">
-                    Municipal Environmental
+                    {profile?.role || "Municipal Environmental"}
                   </p>
                 </div>
                 <ChevronDown
@@ -407,6 +484,7 @@ export default function governmentDashboard() {
               filteredReports={filteredReports}
               cleanupTasks={cleanupTasks}
               reports={reportState}
+              setReportTab={setReportTab}
             />
           )}
           {active === "settings" && (
@@ -420,11 +498,13 @@ export default function governmentDashboard() {
           {active === "reports" && (
             <Reports
               reports={filteredReports}
+              allReports={reportState}
               search={search}
               setSearch={setSearch}
               reportTab={reportTab}
               setReportTab={setReportTab}
               onReview={setSelectedReport}
+              formatDate={formatDate}
               onTask={(report) => {
                 setSelectedReport(report);
                 setTaskModal(true);
@@ -455,8 +535,11 @@ export default function governmentDashboard() {
       {selectedReport && !taskModal && (
         <ReportModal
           report={selectedReport}
+          formatDate={formatDate}
           onClose={() => setSelectedReport(null)}
+          onReject={rejectReport}
           onTask={() => setTaskModal(true)}
+          onApprove={approveReport}
           onAction={(message) => {
             setSelectedReport(null);
             showToast(message);
@@ -497,6 +580,7 @@ function Dashboard({
   filteredReports,
   cleanupTasks,
   reports,
+  setReportTab,
 }) {
   const totalReports = reports.length;
   const pendingReports = reports.filter(
@@ -509,7 +593,7 @@ function Dashboard({
     (report) => report.status == "Critical",
   ).length;
   const inProgressReports = reports.filter(
-    (report) => report.status == "In progress",
+    (report) => report.status == "In-progress",
   ).length;
 
   const stats = [
@@ -519,6 +603,7 @@ function Dashboard({
       detail: "+12.4% this month",
       icon: FileSearch,
       color: "emerald",
+      tab: "All",
     },
     {
       label: "Pending Review",
@@ -526,13 +611,15 @@ function Dashboard({
       detail: "Requires attention",
       icon: Clock3,
       color: "amber",
+      tab: "Pending Review",
     },
     {
-      label: "In Progress",
+      label: "In-Progress",
       value: inProgressReports,
       detail: "Active operations",
       icon: Activity,
       color: "sky",
+      tab: "In-Progress",
     },
     {
       label: "Resolved",
@@ -540,6 +627,7 @@ function Dashboard({
       detail: "+18.2% this month",
       icon: CheckCircle2,
       color: "violet",
+      tab: "Resolved",
     },
     {
       label: "Critical Issues",
@@ -547,6 +635,7 @@ function Dashboard({
       detail: "Immediate attention",
       icon: AlertTriangle,
       color: "rose",
+      tab: "Critical",
     },
   ];
 
@@ -569,9 +658,13 @@ function Dashboard({
         </button>
       </div>
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
-        {stats.map(({ label, value, detail, icon: Icon, color }) => (
+        {stats.map(({ label, value, detail, icon: Icon, color, tab }) => (
           <div
             key={label}
+            onClick={() => {
+              setReportTab(tab);
+              setActive("reports");
+            }}
             className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-200/30 sm:p-5"
           >
             <div className="flex items-start justify-between">
@@ -758,27 +851,47 @@ function Dashboard({
 
 function Reports({
   reports: visibleReports,
+  allReports,
   search,
   setSearch,
   reportTab,
   setReportTab,
   onReview,
   onTask,
+  formatDate,
 }) {
   const tabs = [
-    "All",
-    "Pending Review",
-    "Approved",
-    "Assigned",
-    "In Progress",
-    "Rejected",
-    "Escalated",
-    "Resolved",
-    "Critical",
+    { label: "All", value: "All" },
+    { label: "Pending Review", value: "Pending Review" },
+    { label: "Approved", value: "Approved" },
+    { label: "Assigned", value: "Assigned" },
+    { label: "In Progress", value: "In-Progress" },
+    { label: "Rejected", value: "Rejected" },
+    { label: "Escalated", value: "Escalated" },
+    { label: "Resolved", value: "Resolved" },
+    { label: "Critical", value: "Critical" },
   ];
-  const totalReports = visibleReports.length;
-  const pendingReports = visibleReports.filter(
+  const totalReports = allReports.length;
+  const pendingReports = allReports.filter(
     (report) => report.status === "Pending Review",
+  ).length;
+  const approvedReports = allReports.filter(
+    (report) => report.status === "Approved",
+  ).length;
+  const inProgressReports = allReports.filter(
+    (report) => report.status === "In-Progress",
+  ).length;
+  const completionSubmittedReports = allReports.filter(
+    (report) => report.status === "Completion-Submitted",
+  ).length;
+  const underReviewReports = allReports.filter(
+    (report) => report.status === "Under-Review",
+  ).length;
+  const completedReports = allReports.filter(
+    (report) => report.status === "Completed",
+  ).length;
+  const cancelledReports = allReports.filter(
+    (report) => report.status === "Rejected",
   ).length;
   return (
     <div className="flex flex-col gap-6">
@@ -823,23 +936,38 @@ function Reports({
         </div>
       </div>
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {tabs.map((tab) => (
+        {tabs.map(({ label, value }) => (
           <button
-            key={tab}
-            onClick={() => setReportTab(tab)}
-            className={`whitespace-nowrap rounded-full px-3.5 py-2 text-xs font-bold transition ${reportTab === tab ? "bg-[#073b35] text-white" : "bg-white text-slate-500 hover:bg-emerald-50 hover:text-emerald-700"}`}
+            key={value}
+            onClick={() => setReportTab(value)}
+            className={`whitespace-nowrap rounded-full px-3.5 py-2 text-xs font-bold transition ${
+              reportTab === value
+                ? "bg-[#073b35] text-white"
+                : "bg-white text-slate-500 hover:bg-emerald-50 hover:text-emerald-700"
+            }`}
           >
-            {tab}{" "}
+            {label}
+
             <span
-              className={`ml-1 ${reportTab === tab ? "text-emerald-200" : "text-slate-400"}`}
+              className={`ml-1 ${
+                reportTab === value ? "text-emerald-200" : "text-slate-400"
+              }`}
             >
-              {tab === "All"
+              {value === "All"
                 ? visibleReports.length
-                : tab === "Pending Review"
+                : value === "Pending Review"
                   ? pendingReports
-                  : tab === "Critical"
-                    ? "24"
-                    : "—"}
+                  : value === "Approved"
+                    ? approvedReports
+                    : value === "In-Progress"
+                      ? inProgressReports
+                      : value === "Rejected"
+                        ? cancelledReports
+                        : value === "Critical"
+                          ? visibleReports.filter(
+                              (report) => report.priority === "Critical",
+                            ).length
+                          : "—"}
             </span>
           </button>
         ))}
@@ -851,6 +979,7 @@ function Reports({
             report={report}
             onReview={onReview}
             onTask={onTask}
+            formatDate={formatDate}
           />
         ))}
       </div>
@@ -867,7 +996,7 @@ function Reports({
   );
 }
 
-function ReportCard({ report, onReview, onTask }) {
+function ReportCard({ report, onReview, onTask, formatDate }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/30 transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="relative h-44">
@@ -896,7 +1025,7 @@ function ReportCard({ report, onReview, onTask }) {
             </p>
           </div>
           <p className="text-right text-[10px] font-medium text-slate-400">
-            {report.createdAt}
+            {formatDate(report.createdAt)}
           </p>
         </div>
         <p className="mt-4 line-clamp-2 text-sm leading-5 text-slate-700">
@@ -937,7 +1066,9 @@ function ReportCard({ report, onReview, onTask }) {
         <div className="mt-4 flex items-center justify-between">
           <p className="text-[11px] text-slate-400">
             Due{" "}
-            <span className="font-bold text-slate-600">{report.createdAt}</span>
+            <span className="font-bold text-slate-600">
+              {formatDate(report.createdAt)}
+            </span>
           </p>
           <div className="flex gap-2">
             <button
@@ -963,13 +1094,13 @@ function Tasks({ onCreate, cleanupTasks, handleCreate }) {
   const [taskFilter, setTaskFilter] = useState("All");
   const filters = [
     "All",
-    "available",
-    "assigned",
-    "in-progress",
-    "completion-submitted",
-    "under-review",
-    "completed",
-    "cancelled",
+    "Available",
+    "Assigned",
+    "In-Progress",
+    "Completion-Submitted",
+    "Under-Review",
+    "Completed",
+    "Cancelled",
   ];
 
   const filteredTasks =
@@ -1098,36 +1229,62 @@ function Placeholder({ active, setActive }) {
   );
 }
 function Profile({ profile, setProfile, notify, chooseNav }) {
-  const [draft, setDraft] = useState(profile);
+  const [draft, setDraft] = useState({
+    name: profile.name,
+    role: profile.role,
+    city: profile.location?.city,
+    email: profile.email,
+    phone: profile.phone,
+  });
+  const saveNewProfile = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.patch(
+        "http://localhost:5001/update-user",
+        {
+          name: draft.name,
+          city: draft.city,
+          email: draft.email,
+          phone: draft.phone,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      console.log(response.data);
+      setDraft(response.data.user);
+      notify("Profile Updated Successfully");
+    } catch (error) {
+      console.log(error);
+    }
+  };
   return (
     <>
       <div className="mb-6">
-  <p className="text-sm font-semibold text-green-600">
-    Account center
-  </p>
-  <h1 className="mt-1 text-3xl font-bold text-slate-900">
-    My profile
-  </h1>
-</div>
+        <p className="text-sm font-semibold text-green-600">Account center</p>
+        <h1 className="mt-1 text-3xl font-bold text-slate-900">My profile</h1>
+      </div>
       <div className="grid gap-6 lg:grid-cols-[.7fr_1.3fr]">
         <div className="rounded-2xl border border-border bg-card p-6">
           <div className="flex size-20 items-center justify-center rounded-3xl bg-primary text-2xl font-bold text-primary-foreground">
-            GO
+            {profile?.name?.charAt(0).toUpperCase() || "GO"}
           </div>
-          <h2 className="mt-5 text-2xl font-bold">{profile.name}</h2>
-          <p className="mt-1 text-muted-foreground">{profile.role}</p>
+          <h2 className="mt-5 text-2xl font-bold">{draft.name}</h2>
+          <p className="mt-1 text-muted-foreground">{draft.role}</p>
           <div className="mt-6 flex flex-col gap-3 text-sm">
             <p>
               <MapPin className="mr-2 inline text-primary" size={16} />
-              {profile.district}
+              {draft.city}
             </p>
             <p>
               <Mail className="mr-2 inline text-primary" size={16} />
-              {profile.email}
+              {draft.email}
             </p>
             <p>
               <Phone className="mr-2 inline text-primary" size={16} />
-              {profile.phone}
+              {draft.phone}
             </p>
           </div>
           <div className="mt-6 grid grid-cols-2 gap-3">
@@ -1157,7 +1314,7 @@ function Profile({ profile, setProfile, notify, chooseNav }) {
             {[
               ["name", "Full name"],
               ["role", "Role"],
-              ["district", "District"],
+              ["city", "City"],
               ["email", "Email"],
               ["phone", "Phone"],
             ].map(([key, label]) => (
@@ -1176,7 +1333,10 @@ function Profile({ profile, setProfile, notify, chooseNav }) {
               </label>
             ))}
           </div>
-          <button className="mt-6 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground">
+          <button
+            onClick={saveNewProfile}
+            className="mt-6 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground"
+          >
             <Save className="mr-2 inline" size={16} />
             Save profile
           </button>
@@ -1185,7 +1345,15 @@ function Profile({ profile, setProfile, notify, chooseNav }) {
     </>
   );
 }
-function ReportModal({ report, onClose, onTask, onAction }) {
+function ReportModal({
+  report,
+  onClose,
+  onTask,
+  onAction,
+  onApprove,
+  onReject,
+  formatDate,
+}) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 p-0 backdrop-blur-sm sm:items-center sm:p-5">
       <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
@@ -1223,8 +1391,8 @@ function ReportModal({ report, onClose, onTask, onAction }) {
               {[
                 ["Report ID", report._id],
                 ["User ID", report.userId],
-                ["Created", report.createdAt],
-                ["Deadline", report.createdAt],
+                ["Created", formatDate(report.createdAt)],
+                ["Deadline", formatDate(report.createdAt)],
                 ["Latitude", report.location.latitude],
                 ["Longitude", report.location.longitude],
               ].map(([label, value]) => (
@@ -1311,7 +1479,7 @@ function ReportModal({ report, onClose, onTask, onAction }) {
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
               <button
-                onClick={() => onAction("Report approved")}
+                onClick={() => onApprove(report._id)}
                 className="inline-flex items-center gap-2 rounded-xl bg-[#087f5b] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#056b4d]"
               >
                 <Check size={15} /> Approve report
@@ -1323,7 +1491,7 @@ function ReportModal({ report, onClose, onTask, onAction }) {
                 <AlertTriangle size={15} /> Escalate
               </button>
               <button
-                onClick={() => onAction("Report rejected")}
+                onClick={() => onReject(report._id)}
                 className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-700 hover:bg-rose-100"
               >
                 <X size={15} /> Reject
@@ -1440,7 +1608,7 @@ function TaskModal({ report, onClose, onCreated, onCreate }) {
             >
               <option>Available</option>
               <option>Assigned</option>
-              <option>In Progress</option>
+              <option>In-Progress</option>
             </select>
           </label>
         </div>

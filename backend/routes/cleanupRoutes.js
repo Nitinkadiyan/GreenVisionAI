@@ -3,6 +3,7 @@ const router = express.Router();
 const  upload  = require("../middleware/multer.js");
 const { authorizeRoles } = require("../middleware/authorizeRole");
 const {
+  updateReportStatus,
   createCleanupTask,
   getCleanuptasks,
   getCleanupTaskById,
@@ -16,6 +17,11 @@ const {
   rejectCleanuptask,
 } = require("../controllers/cleanupController");
 const { verifyToken } = require("../middleware/authMiddleware");
+router.patch(
+  "/reports/:id/status",
+  verifyToken,
+  updateReportStatus
+);
 router.post(
   "/create-cleanup-task",
   verifyToken,

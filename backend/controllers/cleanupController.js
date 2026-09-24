@@ -2,6 +2,38 @@ const cleanupTask = require("../models/cleanupTask");
 const CleanupTask = require("../models/cleanupTask");
 const Report = require("../models/Report");
 const { analyzeCleanup } = require("../services/VisionService");
+const updateReportStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const { id } = req.params;
+
+    const report = await Report.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Report status updated successfully",
+      report,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to update report status",
+    });
+  }
+};
 const createCleanupTask = async (req, res) => {
   try {
     const { report, reward, guideline, deadline } = req.body;
@@ -31,7 +63,7 @@ const createCleanupTask = async (req, res) => {
       },
       guideline,
       deadline,
-      status: "available",
+      status: "Available",
       volunteer: null,
     });
     return res.status(201).json({
@@ -177,7 +209,7 @@ const acceptCleanupTask = async (req, res) => {
     }
 
     // Task must still be available
-    if (cleanupTask.status !== "available") {
+    if (cleanupTask.status !== "Available") {
       return res.status(400).json({
         success: false,
         message: "This cleanup task is no longer available",
@@ -191,7 +223,7 @@ const acceptCleanupTask = async (req, res) => {
     cleanupTask.volunteer = userId;
 
     // Change status
-    cleanupTask.status = "assigned";
+    cleanupTask.status = "Assigned";
 
     await cleanupTask.save();
 
@@ -229,13 +261,13 @@ const startCleanupTask = async (req, res) => {
         message: "You are not assigned this task",
       });
     }
-    if (cleanupTask.status !== "assigned") {
+    if (cleanupTask.status !== "Assigned") {
       return res.status(400).json({
         success: false,
         message: "Only an assigned task can be started",
       });
     }
-    cleanupTask.status = "in-progress";
+    cleanupTask.status = "In-Progress";
     await cleanupTask.save();
     return res.status(200).json({
       success: true,
@@ -270,7 +302,7 @@ const submitCleanupCompletion = async (req, res) => {
         message: "You are not assigned this task",
       });
     }
-    if (cleanupTask.status !== "in-progress") {
+    if (cleanupTask.status !== "In-Progress") {
       return res.status(400).json({
         success: false,
         message: "Only in-progress task can be completed",
@@ -338,7 +370,7 @@ const submitCleanupCompletion = async (req, res) => {
       verifiedAt: new Date(),
     };
     console.log(aiVerification);
-    cleanupTask.status = "completion-submitted";
+    cleanupTask.status = "Completion-Submitted";
     await cleanupTask.save();
     return res.status(200).json({
       success: true,
@@ -356,7 +388,7 @@ const submitCleanupCompletion = async (req, res) => {
 const UnderReviewTask = async (req, res) => {
   try {
     const tasks = await CleanupTask.find({
-      status: "completion-submitted",
+      status: "Completion-Submitted",
     })
       .populate("report")
       .populate("volunteer", "username email")
@@ -384,7 +416,7 @@ const completeCleanupTask = async (req, res) => {
         message: "Cleanup task not found",
       });
     }
-    if (task.status !== "completion-submitted") {
+    if (task.status !== "Completion-Submitted") {
       return res.status(400).json({
         success: false,
         message: "Task is not under-review",
@@ -416,13 +448,13 @@ const rejectCleanuptask = async (req, res) => {
       });
     }
     console.log(task.status);
-    if (task.status !== "completion-submitted") {
+    if (task.status !== "Completion-Submitted") {
       return res.status(400).json({
         success: false,
         message: "Task is not under-review",
       });
     }
-    task.status = "rejected";
+    task.status = "Rejected";
     await task.save();
     return res.status(200).json({
       success: true,
@@ -438,6 +470,7 @@ const rejectCleanuptask = async (req, res) => {
   }
 };
 module.exports = {
+  updateReportStatus,
   createCleanupTask,
   getCleanuptasks,
   getCleanupTaskById,
