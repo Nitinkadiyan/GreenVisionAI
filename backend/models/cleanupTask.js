@@ -26,13 +26,13 @@ const cleanupTaskSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: [
-        "available",
-        "assigned",
-        "in-progress",
-        "completion-submitted",
-        "under-review",
-        "completed",
-        "cancelled",
+        "Available",
+        "Assigned",
+        "In-Progress",
+        "Completion-Submitted",
+        "Under-Review",
+        "Completed",
+        "Cancelled",
       ],
     },
     volunteer: {

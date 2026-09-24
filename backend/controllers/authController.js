@@ -32,7 +32,7 @@ const Signup = async (req, res) => {
       email,
       phone,
       password,
-     name: name,
+      name: name,
       otp,
       role,
       location: {
@@ -51,7 +51,7 @@ const Signup = async (req, res) => {
     await sendEmail(user.email, "Verify Your Email", html);
 
     const token = createSecretToken(user._id, user.role);
-   
+
     return res.status(201).json({
       message: "User signed in successfully",
       success: true,
@@ -90,7 +90,7 @@ const Login = async (req, res) => {
       });
     }
     const token = createSecretToken(user._id, user.role);
-   
+
     return res.status(201).json({
       message: "User LoggedIn Successfully",
       success: true,
@@ -297,7 +297,7 @@ const updateUser = async (req, res) => {
         message: "User not found",
       });
     }
-    const { name, email } = req.body;
+    const { name, email, city, phone } = req.body;
     await User.updateOne(
       {
         email,
@@ -306,13 +306,16 @@ const updateUser = async (req, res) => {
         $set: {
           name: name,
           email: email,
+          "location.city": city,
+          phone: phone,
         },
       },
     );
+    const updatedUser = await User.findById(req.user.id).select("-password -confirmPassword");
     return res.status(201).json({
       success: true,
       message: "User Updated Successfully",
-      user,
+      user:updatedUser,
     });
   } catch (err) {
     console.log(err);
