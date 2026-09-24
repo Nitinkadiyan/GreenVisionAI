@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import {
+  Trash2,
   Activity,
   ArrowLeft,
   ArrowRight,
@@ -41,50 +42,7 @@ import {
 import { useEffect } from "react";
 import api from "../../api/axios"
 
-const reports = [
-  {
-    id: "GV-1024",
-    title: "Illegal Plastic Waste",
-    category: "Plastic Waste",
-    location: "Koramangala, Bangalore",
-    date: "Aug 24, 2026",
-    status: "Accepted by Government",
-    severity: "High",
-    image:
-      "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=500&q=80",
-    response: "Cleanup task assigned",
-    description:
-      "A large accumulation of single-use plastic waste has been blocking the stormwater drain near the community park.",
-  },
-  {
-    id: "GV-1019",
-    title: "Open Dumping Near Lake",
-    category: "Illegal Dumping",
-    location: "Bellandur Lake, Bangalore",
-    date: "Aug 18, 2026",
-    status: "Pending Review",
-    severity: "Medium",
-    image:
-      "https://images.unsplash.com/photo-1621451537084-482c73073a0f?auto=format&fit=crop&w=500&q=80",
-    response: "Awaiting review",
-    description:
-      "Mixed household waste was found dumped along the eastern service road of the lake.",
-  },
-  {
-    id: "GV-1008",
-    title: "Overflowing Community Bin",
-    category: "Waste Management",
-    location: "Indiranagar, Bangalore",
-    date: "Aug 10, 2026",
-    status: "Resolved",
-    severity: "Low",
-    image:
-      "https://images.unsplash.com/photo-1604187351574-c75ca79f5807?auto=format&fit=crop&w=500&q=80",
-    response: "Issue resolved",
-    description:
-      "The community collection point was overflowing for several days and attracting stray animals.",
-  },
-];
+
 
 const cleanupTasks = [
   {
@@ -131,51 +89,6 @@ const navReports = [
   "In Progress",
   "Completed",
 ];
-const stats = [
-  [
-    "My Reports",
-    "24",
-    "Total submitted",
-    FileText,
-    "bg-emerald-50 text-emerald-700",
-  ],
-  [
-    "Pending Reports",
-    "3",
-    "Awaiting government review",
-    Clock3,
-    "bg-amber-50 text-amber-700",
-  ],
-  [
-    "Active Volunteer Tasks",
-    "2",
-    "Currently in progress",
-    Activity,
-    "bg-sky-50 text-sky-700",
-  ],
-  [
-    "Completed Tasks",
-    "12",
-    "Successfully completed",
-    CheckCircle2,
-    "bg-violet-50 text-violet-700",
-  ],
-  [
-    "Total Rewards",
-    "₹2,450",
-    "Total earned",
-    Gift,
-    "bg-orange-50 text-orange-700",
-  ],
-  [
-    "My Stars",
-    "1,240",
-    "Community contribution score",
-    Star,
-    "bg-lime-50 text-lime-700",
-  ],
-];
-
 
 
 function Badge({ children, tone = "slate" }) {
@@ -439,13 +352,80 @@ function SectionTitle({ title, subtitle, action, onAction }) {
   );
 }
 
-function Dashboard({ setView, query }) {
+// if (loading) {
+//   return (
+//     <div className="p-8 text-sm text-slate-500">
+//       Loading your dashboard...
+//     </div>
+//   );
+// }
+function Dashboard({ setView, query, reports, loading, setSelectedReport, reportsError }) {
     const navigate = useNavigate();
-  const filtered = reports.filter((r) =>
-    `${r.title} ${r.category} ${r.location}`
-      .toLowerCase()
-      .includes(query.toLowerCase()),
-  );
+const filtered = reports.filter((r) => {
+  const searchText = `
+    ${r.aiAnalysis?.wasteType || ""}
+    ${r.description || ""}
+    ${r.location?.address || ""}
+  `.toLowerCase();
+
+  return searchText.includes(query.toLowerCase());
+});
+
+const totalReports = reports.length;
+
+const pendingReports = reports.filter(
+  (r) => r.status === "Pending Review"
+).length;
+
+const acceptedReports = reports.filter(
+  (r) => r.status === "Approved"
+).length;
+
+const inProgressReports = reports.filter(
+  (r) => r.status === "In Progress"
+).length;
+
+const resolvedReports = reports.filter(
+  (r) => r.status === "Resolved"
+).length;
+
+const dashboardStats = [
+  [
+    "My Reports",
+    totalReports,
+    "Total submitted",
+    FileText,
+    "bg-emerald-50 text-emerald-700",
+  ],
+  [
+    "Pending Reports",
+    pendingReports,
+    "Awaiting government review",
+    Clock3,
+    "bg-amber-50 text-amber-700",
+  ],
+  [
+    "Accepted Reports",
+    acceptedReports,
+    "Accepted by government",
+    ShieldCheck,
+    "bg-sky-50 text-sky-700",
+  ],
+  [
+    "In Progress",
+    inProgressReports,
+    "Cleanup currently in progress",
+    Activity,
+    "bg-violet-50 text-violet-700",
+  ],
+  [
+    "Resolved Reports",
+    resolvedReports,
+    "Successfully resolved",
+    CheckCircle2,
+    "bg-orange-50 text-orange-700",
+  ],
+];
   return (
     <div className="space-y-8 p-5 md:p-8">
       <section className="relative overflow-hidden rounded-3xl bg-linear-to-br from-emerald-700 via-emerald-600 to-teal-500 p-6 text-white shadow-xl shadow-emerald-100 md:p-9">
@@ -486,7 +466,7 @@ function Dashboard({ setView, query }) {
           subtitle="Keep up the momentum — your community is counting on you."
         />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {stats.map(([name, value, sub, Icon, color]) => (
+          {dashboardStats.map(([name, value, sub, Icon, color]) => (
             <div
               key={name}
               className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
@@ -519,9 +499,11 @@ function Dashboard({ setView, query }) {
         <div className="grid gap-4 xl:grid-cols-3">
           {filtered.map((report) => (
             <ReportCard
-              key={report.id}
+              key={report._id}
               report={report}
-              onClick={() => setView("reportDetail")}
+              onClick={() => {
+                setSelectedReport(report);
+                setView("reportDetail")}}
             />
           ))}
         </div>
@@ -578,38 +560,15 @@ function ReportCard({ report, onClick }) {
   );
 }
 
-function ReportsView({ setView, query, setQuery, setSelectedReport }) {
+function ReportsView({reports, loading, error, setView, query, setQuery, setSelectedReport }) {
   const [filter, setFilter] = useState("All");
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
-  useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get("/reports/my-reports");
-        console.log("Reports from backend:", response.data);
-        setReports(response.data.reports||[]);
-      } catch (error) {
-        console.log(
-          "Error fetching reports:",
-          error.response?.data || error.message
-        );
-        setError(
-          error.response?.data?.message || "Failed to fetch reports"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchReports();
-  }, []);
     const list = reports.filter(
     (r) =>{
       const statusMatch = filter === "All" || r.status?.includes(filter) 
     const searchText = ` ${r.title || ""} ${r.description || ""} ${r.location?.address || ""} ${r.aiAnalysis?.wasteType || ""} `.toLowerCase();
-    const searchMatch = searchText.includes(query.toLowerCase()); return statusMatch && searchMatch;
+    const searchMatch = searchText.includes(query.toLowerCase()); 
+    return (statusMatch && searchMatch);
 });
 
   if (loading) {
@@ -666,8 +625,35 @@ function ReportsView({ setView, query, setQuery, setSelectedReport }) {
     />
   ))}
 </div>
+ {list.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-slate-200 p-10 text-center text-sm text-slate-500">
+          No reports found.
+        </div>
+      )}
     </div>
   );
+};
+
+function getStatusTone(status) {
+  switch (status) {
+    case "Resolved":
+      return "green";
+
+    case "Rejected":
+      return "red";
+
+    case "Pending Review":
+      return "amber";
+
+    case "Approved":
+    case "Assigned":
+    case "In Progress":
+    case "Escalated":
+      return "blue";
+
+    default:
+      return "slate";
+  }
 }
 
 function ReportDetail({ setView, report }) {
@@ -695,7 +681,7 @@ if (!report) {
             {report.aiAnalysis?.wasteType || "Environmental Report"}
           </h2>
         </div>
-        <Badge tone="blue">{report.status}</Badge>
+        <Badge tone={getStatusTone(report.status)}>{report.status}</Badge>
       </div>
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-6">
@@ -768,7 +754,7 @@ if (!report) {
 <div>
   <p>Estimated Waste</p>
   <p>
-    {report.aiAnalysis?.estimatedWasteKg ?? 0} kg
+    {report.aiAnalysis?.estimateWasteKg  ?? 0} kg
   </p>
 </div>
             </div>
@@ -779,8 +765,8 @@ if (!report) {
           </div>
         </div>
         <div className="space-y-6">
-          <Timeline />
-          <CleanupPanel />
+          <Timeline report={report}/>
+          <CleanupPanel  report = {report}/>
         </div>
         </div>
         </>
@@ -789,24 +775,52 @@ if (!report) {
 }
 
 
-function Timeline() {
+function Timeline({report}) {
   const steps = [
-    "Report Submitted",
-    "AI Analysis Completed",
-    "Accepted by Government",
-    "Cleanup Task Assigned",
+    {
+      label: "Report Submitted",
+      done: true,
+    },
+    {
+      label: "AI Analysis Completed",
+      done: !!report.aiAnalysis,
+    },
+
+    {
+  label: "Accepted by Government",
+  done: [
+    "Approved",
+    "Assigned",
+    "In Progress",
+    "Resolved",
+    "Escalated",
+  ].includes(report.status),
+},
+    {
+  label: "Cleanup Task Assigned",
+  done:
+    ["Assigned", "In Progress", "Resolved"].includes(report.status) ||
+    !!report.assignedTo ||
+    !!report.assignedAt,
+},
     "Volunteer Accepted",
-    "Cleanup In Progress",
+    {
+  label: "Cleanup In Progress",
+  done: ["In Progress", "Resolved"].includes(report.status),
+},
     "Completion Submitted",
     "Government Review",
-    "Resolved",
+    {
+  label: "Resolved",
+  done: report.status === "Resolved",
+},
   ];
   return (
     <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
       <h3 className="font-bold text-slate-900">Government Response</h3>
       <div className="mt-5 space-y-0">
         {steps.map((step, i) => (
-          <div key={step} className="flex gap-3">
+          <div key={step.label} className="flex gap-3">
             <div className="flex flex-col items-center">
               <span
                 className={`grid h-6 w-6 place-items-center rounded-full ${i < 6 ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-400"}`}
@@ -817,14 +831,14 @@ function Timeline() {
                   <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
                 )}
               </span>
-              {i < steps.length - 1 && (
+              {step.done && (
                 <span
                   className={`h-6 w-px ${i < 5 ? "bg-emerald-200" : "bg-slate-200"}`}
                 />
               )}
             </div>
             <p
-              className={`pb-2 text-sm ${i < 6 ? "font-semibold text-slate-700" : "text-slate-400"}`}
+              className={`pb-2 text-sm ${step.done ? "font-semibold text-slate-700" : "text-slate-400"}`}
             >
               {step}
             </p>
@@ -835,158 +849,395 @@ function Timeline() {
   );
 }
 
-function CleanupPanel() {
+function CleanupPanel({report}) {
+  const [showDetails, setShowDetails] = useState(false);
+  const isRejected = report.status === "Rejected";
+const isEscalated = report.status === "Escalated";
   return (
     <div className="rounded-3xl bg-slate-900 p-6 text-white shadow-lg">
       <div className="flex items-center justify-between">
-        <h3 className="font-bold">Cleanup Task</h3>
-        <Badge tone="green">In Progress</Badge>
+        <h3 className="font-bold">
+  {isRejected ? "Report Rejected" : isEscalated ? "Report Escalated" : "Cleanup Task"}
+</h3>
+        <Badge tone="green">{report.status}</Badge>
       </div>
       <div className="mt-5 space-y-4 text-sm">
         <div className="flex justify-between border-b border-white/10 pb-3">
           <span className="text-slate-400">Reward</span>
-          <strong>₹500</strong>
+          <strong>₹{report.rewardAmount ?? 0}</strong>
         </div>
         <div className="flex justify-between border-b border-white/10 pb-3">
           <span className="text-slate-400">Deadline</span>
-          <strong>Aug 30, 2026</strong>
+          <strong>{report.deadline
+  ? new Date(report.deadline).toLocaleDateString()
+  : "Not assigned"}</strong>
         </div>
+        <div className="flex justify-between border-b border-white/10 pb-3">
+  <span className="text-slate-400">Department</span>
+  <strong>{report.assignedDepartment || "Not assigned"}</strong>
+</div>
         <div>
-          <span className="text-slate-400">Guideline</span>
+          <span className="text-slate-400">{isRejected ? "Rejection Reason" : isEscalated ? "Escalation Reason" : "Guideline"}</span>
           <p className="mt-1 leading-5 text-slate-200">
-            Collect, segregate, and safely hand over waste to the partner
-            center.
+             {isRejected
+      ? report.rejectionReason || "No rejection reason provided."
+      : isEscalated
+      ? report.escalateReason || "This report has been escalated."
+      : report.aiAnalysis?.possibleAction ||
+        "Cleanup instructions not available."}
           </p>
         </div>
       </div>
-      <button className="mt-6 w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold hover:bg-emerald-400">
-        View Task Details
-      </button>
+      <button
+  onClick={() => setShowDetails(!showDetails)}
+  className="mt-6 w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold hover:bg-emerald-400"
+>
+  {showDetails ? "Hide Task Details" : "View Task Details"}
+</button>
+{showDetails && (
+  <div className="mt-4 rounded-2xl bg-white/5 p-4 text-sm">
+    <div className="space-y-3">
+      <div className="flex justify-between">
+        <span className="text-slate-400">Report ID</span>
+        <span>{report._id}</span>
+      </div>
+
+      <div className="flex justify-between">
+        <span className="text-slate-400">Department</span>
+        <span>{report.assignedDepartment || "Not assigned"}</span>
+      </div>
+
+      <div className="flex justify-between">
+        <span className="text-slate-400">Assigned</span>
+        <span>
+          {report.assignedAt
+            ? new Date(report.assignedAt).toLocaleDateString()
+            : "Not assigned"}
+        </span>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
 
+
 function VolunteerView() {
-  const [tasks, setTasks] = useState(cleanupTasks);
-  const [active, setActive] = useState(null);
-  const update = (id, status) =>
-    setTasks(tasks.map((t) => (t.id === id ? { ...t, status } : t)));
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTask, setActiveTask] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Fetch available cleanup tasks
+  const fetchCleanupTasks = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await api.get("/cleanup/clean-up-tasks");
+
+      if (response.data.success) {
+        setTasks(response.data.cleanupTasks || []);
+      }
+    } catch (error) {
+      console.error("Error fetching cleanup tasks:", error);
+
+      setError(
+        error.response?.data?.message ||
+          "Unable to fetch cleanup tasks."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCleanupTasks();
+  }, []);
+
+  // Accept cleanup task
+  const handleAcceptTask = async (taskId) => {
+    try {
+      setActionLoading(true);
+
+      const response = await api.patch(
+        `/cleanup/${taskId}/accept`
+      );
+  
+      if (response.data.success) {
+        alert("Cleanup task accepted successfully!");
+
+        // Refresh available tasks
+        await fetchCleanupTasks();
+
+        // Open the accepted task
+        setActiveTask(response.data.cleanupTask);
+      }
+    } catch (error) {
+      console.error("Accept task error:", error);
+
+      alert(
+        error.response?.data?.message ||
+          "Failed to accept cleanup task."
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Start cleanup task
+  const handleStartTask = async (taskId) => {
+    try {
+      setActionLoading(true);
+
+      const response = await api.patch(
+        `/cleanup/${taskId}/start`
+      );
+
+      if (response.data.success) {
+        alert("Cleanup task started!");
+
+        setActiveTask(response.data.cleanupTask);
+
+        // Refresh available tasks
+        await fetchCleanupTasks();
+      }
+    } catch (error) {
+      console.error("Start task error:", error);
+
+      alert(
+        error.response?.data?.message ||
+          "Failed to start cleanup task."
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-5 md:p-8">
+        <SectionTitle
+          title="Become a Volunteer"
+          subtitle="Find nearby cleanup tasks and contribute to your community."
+        />
+
+        <div className="mt-10 flex justify-center">
+          <div className="text-sm text-slate-500">
+            Loading cleanup tasks...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-5 md:p-8">
       <SectionTitle
         title="Become a Volunteer"
-        subtitle="Your citizen account can participate in meaningful local cleanup work."
+        subtitle="Find cleanup tasks and contribute to your community."
       />
+
       <div className="mb-6 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-800">
-        <span className="font-bold">Good to know:</span> There is no separate
-        volunteer role. Accept tasks using your existing GreenVision citizen
-        account.
+        <span className="font-bold">Good to know:</span>{" "}
+        There is no separate volunteer role. You can use your
+        existing GreenVision citizen account to accept cleanup
+        tasks.
       </div>
-      <div className="grid gap-5 lg:grid-cols-2">
-        {tasks.map((task) => (
-          <div
-            key={task.id}
-            className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="font-bold text-slate-900">{task.title}</h3>
-                <p className="mt-2 flex items-center gap-1 text-sm text-slate-500">
-                  <MapPin size={15} className="text-emerald-600" />
-                  {task.location}
-                </p>
-              </div>
-              <Badge
-                tone={
-                  task.priority === "High"
-                    ? "red"
-                    : task.priority === "Medium"
-                      ? "amber"
-                      : "green"
-                }
-              >
-                {task.priority} priority
-              </Badge>
-            </div>
-            <div className="mt-6 grid grid-cols-2 gap-4 rounded-2xl bg-slate-50 p-4">
-              <div>
-                <p className="text-xs text-slate-400">Reward</p>
-                <p className="mt-1 font-bold text-emerald-700">{task.reward}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Deadline</p>
-                <p className="mt-1 font-semibold text-slate-700">
-                  {task.deadline}
-                </p>
-              </div>
-            </div>
-            <div className="mt-5 flex gap-3">
-              {task.status === "Available" && (
-                <button
-                  onClick={() => update(task.id, "Accepted")}
-                  className="flex-1 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700"
-                >
-                  Accept Task
-                </button>
-              )}
-              {task.status === "Accepted" && (
-                <button
-                  onClick={() => update(task.id, "In Progress")}
-                  className="flex-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white"
-                >
-                  Start Task
-                </button>
-              )}
-              {task.status === "In Progress" && (
-                <button
-                  onClick={() => setActive(task.id)}
-                  className="flex-1 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white"
-                >
-                  Submit Completion
-                </button>
-              )}
-              {task.status === "Assigned" && (
-                <button
-                  onClick={() => update(task.id, "Accepted")}
-                  className="flex-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white"
-                >
-                  Accept Assigned Task
-                </button>
-              )}
-              <button className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600">
-                View Task
-              </button>
-            </div>
-            {task.status !== "Available" && (
-              <p className="mt-3 text-center text-xs font-semibold text-emerald-600">
-                {task.status}
-              </p>
-            )}
-            {active === task.id && (
-              <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
-                <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-emerald-300 bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">
-                  <Upload size={16} />
-                  Add before / after images
-                  <input type="file" className="hidden" />
-                </label>
-                <textarea
-                  placeholder="Describe the work completed..."
-                  className="min-h-20 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-emerald-400"
-                />
-                <button
-                  onClick={() => {
-                    update(task.id, "Under Government Review");
-                    setActive(null);
-                  }}
-                  className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white"
-                >
-                  Submit Completion
-                </button>
-              </div>
-            )}
+
+      {error && (
+        <div className="mb-6 rounded-2xl bg-red-50 p-4 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {tasks.length === 0 ? (
+        <div className="rounded-3xl border border-slate-100 bg-white p-10 text-center shadow-sm">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
+            <Trash2 className="text-emerald-600" size={25} />
           </div>
-        ))}
-      </div>
+
+          <h3 className="mt-4 font-bold text-slate-900">
+            No Cleanup Tasks Available
+          </h3>
+
+          <p className="mt-2 text-sm text-slate-500">
+            There are currently no approved cleanup tasks available
+            for volunteers.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-5 lg:grid-cols-2">
+          {tasks.map((task) => (
+            <div
+              key={task._id}
+              className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-bold text-slate-900">
+                    Cleanup Task
+                  </h3>
+
+                  <p className="mt-2 flex items-center gap-1 text-sm text-slate-500">
+                    <MapPin
+                      size={15}
+                      className="text-emerald-600"
+                    />
+
+                    {task.report?.description ||
+                      "Cleanup required at reported location"}
+                  </p>
+                </div>
+
+                <Badge tone="green">
+                  {task.status}
+                </Badge>
+              </div>
+
+              <div className="mt-6 grid grid-cols-2 gap-4 rounded-2xl bg-slate-50 p-4">
+                <div>
+                  <p className="text-xs text-slate-400">
+                    Reward
+                  </p>
+
+                  <p className="mt-1 font-bold text-emerald-700">
+                    ₹{task.reward?.amount ?? 0}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-slate-400">
+                    Deadline
+                  </p>
+
+                  <p className="mt-1 font-semibold text-slate-700">
+                    {task.deadline
+                      ? new Date(
+                          task.deadline
+                        ).toLocaleDateString()
+                      : "Not assigned"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Cleanup Guideline
+                </p>
+
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  {task.guideline ||
+                    "Follow the cleanup instructions provided for this task."}
+                </p>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                {task.status === "available" && (
+                  <button
+                    disabled={actionLoading}
+                    onClick={() =>
+                      handleAcceptTask(task._id)
+                    }
+                    className="flex-1 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {actionLoading
+                      ? "Accepting..."
+                      : "Accept Task"}
+                  </button>
+                )}
+
+                {task.status === "assigned" && (
+                  <button
+                    disabled={actionLoading}
+                    onClick={() =>
+                      handleStartTask(task._id)
+                    }
+                    className="flex-1 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {actionLoading
+                      ? "Starting..."
+                      : "Start Cleanup"}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Active Task */}
+      {activeTask && (
+        <div className="mt-8 rounded-3xl bg-slate-900 p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-bold">
+                Your Active Cleanup Task
+              </h3>
+
+              <p className="mt-1 text-sm text-slate-400">
+                Task ID: {activeTask._id}
+              </p>
+            </div>
+
+            <Badge tone="green">
+              {activeTask.status}
+            </Badge>
+          </div>
+
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            <div>
+              <p className="text-xs text-slate-400">
+                Reward
+              </p>
+
+              <p className="mt-1 font-bold">
+                ₹{activeTask.reward?.amount ?? 0}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs text-slate-400">
+                Deadline
+              </p>
+
+              <p className="mt-1 font-semibold">
+                {activeTask.deadline
+                  ? new Date(
+                      activeTask.deadline
+                    ).toLocaleDateString()
+                  : "Not assigned"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs text-slate-400">
+                Status
+              </p>
+
+              <p className="mt-1 font-semibold">
+                {activeTask.status}
+              </p>
+            </div>
+          </div>
+
+          {activeTask.status === "in-progress" && (
+            <button
+              onClick={() => {
+                // Completion UI will be implemented next
+                alert(
+                  "Next step: submit before and after cleanup images."
+                );
+              }}
+              className="mt-6 w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-400"
+            >
+              Submit Cleanup Completion
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -1328,16 +1579,42 @@ export default function UserDashboard() {
   const [logout, setLogout] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedReport, setSelectedReport] = useState(null);
+  const [reports, setReports] = useState([]);
+  const [reportsLoading, setReportsLoading] = useState(true);
+  const [reportsError, setReportsError] = useState("");
+
+  useEffect(() => {
+    const fetchMyReports = async () => {
+      try {
+        setReportsLoading(true);
+        const response = await api.get("/reports/my-reports");
+        console.log("Dashboard reports:", response.data);
+        setReports(response.data.reports || []);
+      } catch (error) {
+        console.error(
+          "Error fetching dashboard reports:",
+          error.response?.data || error.message
+        );
+        setReportsError(
+          error.response?.data?.message ||
+            "Failed to fetch your reports"
+        );
+      } finally {
+        setReportsLoading(false);
+      }
+    };
+    fetchMyReports();
+  }, []);
 
   const content =
     view === "dashboard" ? (
-      <Dashboard setView={setView} query={query} />
+      <Dashboard setView={setView} query={query} reports={reports} loading={reportsLoading} setSelectedReport={setSelectedReport} reportsError={reportsError}/>
     ) : view === "reports" ? (
-      <ReportsView setView={setView} query={query} setQuery={setQuery} setSelectedReport={setSelectedReport}/>
+      <ReportsView reports={reports} loading={reportsLoading} error={reportsError} setView={setView} query={query} setQuery={setQuery} setSelectedReport={setSelectedReport}/>
     ) : view === "reportDetail" ? (
       <ReportDetail setView={setView} report={selectedReport}/>
     ) : view === "volunteer" || view === "tasks" ? (
-      <VolunteerView />
+      <VolunteerView  reports={reports}/>
     ) : view === "map" ? (
       <MapView setView={setView} />
     ) : view === "notifications" ? (

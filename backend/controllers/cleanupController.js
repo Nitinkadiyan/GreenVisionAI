@@ -91,7 +91,7 @@ const getCleanupTaskById = async (req, res) => {
         success: false,
         message: "Cleanup task not found",
       });
-    }
+    }  
     return res.status(200).json({
       success: true,
       cleanupTask,

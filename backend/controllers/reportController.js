@@ -77,6 +77,7 @@ const createReport = async (req, res) => {
     }
     const parsedAnalysis = JSON.parse(aiAnalysis);
     // const result = await analyzeImage(image);
+
     const uploadedImage = await cloudinary.uploader.upload(image.path);
     console.log("before result");
     // console.log(result);
@@ -173,6 +174,45 @@ const getMyReports = async (req, res) => {
   }
 };
 
+// const getMyReports = async (req, res) => {
+//   try {
+//     console.log("========== MY REPORTS ==========");
+//     console.log("REQ.USER:", req.user);
+//     console.log("REQ.USER.ID:", req.user.id);
+
+//     const allReports = await Report.find();
+
+//     console.log("TOTAL REPORTS:", allReports.length);
+
+//     allReports.forEach((report) => {
+//       console.log(
+//         "Report:",
+//         report._id.toString(),
+//         "| userId:",
+//         report.userId.toString(),
+//       );
+//     });
+
+//     const reports = await Report.find({
+//       userId: req.user.id,
+//     }).sort({ createdAt: -1 });
+
+//     console.log("MATCHING REPORTS:", reports.length);
+//     console.log("================================");
+
+//     return res.status(200).json({
+//       success: true,
+//       reports,
+//     });
+//   } catch (e) {
+//     console.log("GET MY REPORTS ERROR:", e);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: "Internal server error",
+//     });
+//   }
+// };
 const updateReport = async (req, res) => {
   try {
     const { id } = req.params;

@@ -51,7 +51,7 @@ const Signup = async (req, res) => {
     await sendEmail(user.email, "Verify Your Email", html);
 
     const token = createSecretToken(user._id, user.role);
-   
+
     return res.status(201).json({
       message: "User signed in successfully",
       success: true,
@@ -77,7 +77,7 @@ const Login = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "user Not Found",
+        message: "User Not Found",
       });
     }
     console.log(user.password);
@@ -90,7 +90,7 @@ const Login = async (req, res) => {
       });
     }
     const token = createSecretToken(user._id, user.role);
-   
+
     return res.status(201).json({
       message: "User LoggedIn Successfully",
       success: true,

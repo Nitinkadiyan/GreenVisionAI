@@ -94,6 +94,7 @@ export default function SignUp() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     console.log("function called");
+    alert(`Signup successfull! Welcome ${form.name}`);
     setSubmitted(true);
 
     
@@ -116,7 +117,7 @@ export default function SignUp() {
       }
       formData.append("role", role);
       if (form.role === "government" && form.accessCode) {
-        formData.append("accessCode", form.aczcessCode);
+        formData.append("accessCode", form.accessCode);
       }
       // if (form.profilePicture) {
       //   formData.append(
