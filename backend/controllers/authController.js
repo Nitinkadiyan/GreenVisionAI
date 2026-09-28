@@ -3,6 +3,7 @@ const { createSecretToken } = require("../utils/secretToken.js");
 const bcrypt = require("bcrypt");
 const otpTemplate = require("../templates/otpTemplate");
 const sendEmail = require("../utils/sendEmail.js");
+const cloudinary = require("../utils/cloudinary.js");
 const dotenv = require("dotenv");
 require("dotenv").config();
 const Signup = async (req, res) => {
@@ -44,6 +45,14 @@ const Signup = async (req, res) => {
         });
       }
     }
+    let profilePicture=null;
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path);
+      profilePicture = {
+        url: result.secure_url,
+        publicId: result.public_id,
+      };
+    }
     const user = await User.create({
       email,
       phone,
@@ -60,6 +69,7 @@ const Signup = async (req, res) => {
       isVerified: false,
       createdAt,
       role,
+      profilePicture:profilePicture,
     });
 
     const html = otpTemplate(user.name, otp);
