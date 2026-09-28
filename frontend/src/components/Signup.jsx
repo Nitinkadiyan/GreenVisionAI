@@ -116,8 +116,8 @@ export default function SignUp() {
         formData.append("longitude", form.longitude);
       }
       formData.append("role", role);
-      if (form.role === "government" && form.accessCode) {
-        formData.append("accessCode", form.aczcessCode);
+      if (role === "government" && form.accessCode) {
+        formData.append("accessCode", form.accessCode.trim());
       }
       // if (form.profilePicture) {
       //   formData.append(

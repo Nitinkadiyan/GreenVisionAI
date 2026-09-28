@@ -1,6 +1,6 @@
-const Volunteer = require("../models/Volunteer");
-const User = require("../models/User");
 
+const User = require("../models/User.js");
+const Volunteer = require("../models/Volunteer.js");
 const createVolunteer = async (req, res) => {
   try {
     const userId = req.user.id;
