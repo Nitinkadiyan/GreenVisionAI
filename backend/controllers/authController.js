@@ -324,19 +324,11 @@ const updateUser = async (req, res) => {
       });
     }
     const { name, email, city, phone } = req.body;
-    await User.updateOne(
-      {
-        email,
-      },
-      {
-        $set: {
-          name: name,
-          email: email,
-          "location.city": city,
-          phone: phone,
-        },
-      },
-    );
+    user.name =name;
+    user.email =email;
+    user.phone =phone;
+    user.location.city = city;
+    await user.save();
     const updatedUser = await User.findById(req.user.id).select(
       "-password -confirmPassword",
     );

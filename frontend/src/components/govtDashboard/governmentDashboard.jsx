@@ -232,8 +232,8 @@ export default function governmentDashboard() {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log(response);
-      console.log(response.data.user);
+      // console.log(response);
+      // console.log(response.data.user);
       setProfile(response.data.user);
     } catch (error) {
       console.log(error);
@@ -264,7 +264,7 @@ export default function governmentDashboard() {
     getAllCleanups();
   }, []);
   const getAllCleanups = async () => {
-    console.log("nikku doing work");
+    // console.log("nikku doing work");
     const token = localStorage.getItem("token");
     const response = await axios.get(
       "http://localhost:5001/volunteer/clean-up-tasks",
@@ -274,7 +274,7 @@ export default function governmentDashboard() {
         },
       },
     );
-    console.log("FULL Cleanup Response:", response.data.cleanupTasks);
+    // console.log("FULL Cleanup Response:", response.data.cleanupTasks);
     setCleanupTasks(response.data.cleanupTasks || []);
   };
 
@@ -291,7 +291,7 @@ export default function governmentDashboard() {
         },
       );
 
-      console.log("FULL RESPONSE:", response.data);
+      // console.log("FULL RESPONSE:", response.data);
       // console.log("REPORTS:", response.data.reports);
 
       setReportState(response.data.reports || []);
@@ -349,7 +349,7 @@ export default function governmentDashboard() {
           },
         },
       );
-      console.log(response);
+      // console.log(response);
       console.log("Task Created :", response.data);
       return response.data;
     } catch (error) {
@@ -376,7 +376,7 @@ export default function governmentDashboard() {
         },
       );
 
-      console.log("Report approved:", response.data);
+      // console.log("Report approved:", response.data);
 
       // Update frontend immediately
       setReportState((currentReports) =>
@@ -1319,7 +1319,7 @@ function Placeholder({ active, setActive }) {
 function Profile({ profile, setProfile, notify, chooseNav }) {
   const [draft, setDraft] = useState({
     name: profile.name,
-    role: profile.role,
+
     city: profile.location?.city,
     email: profile.email,
     phone: profile.phone,
@@ -1341,8 +1341,16 @@ function Profile({ profile, setProfile, notify, chooseNav }) {
           },
         },
       );
+      const updatedUser = response.data.user;
       console.log(response.data);
-      setDraft(response.data.user);
+      setDraft({
+        name: updatedUser.name,
+        role: updatedUser.role,
+        city: updatedUser.location?.city || "",
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+      });
+      setProfile(updatedUser);
       notify("Profile Updated Successfully");
     } catch (error) {
       console.log(error);
@@ -1360,7 +1368,7 @@ function Profile({ profile, setProfile, notify, chooseNav }) {
             {profile?.name?.charAt(0).toUpperCase() || "GO"}
           </div>
           <h2 className="mt-5 text-2xl font-bold">{draft.name}</h2>
-          <p className="mt-1 text-muted-foreground">{draft.role}</p>
+
           <div className="mt-6 flex flex-col gap-3 text-sm">
             <p>
               <MapPin className="mr-2 inline text-primary" size={16} />
@@ -1401,7 +1409,6 @@ function Profile({ profile, setProfile, notify, chooseNav }) {
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {[
               ["name", "Full name"],
-              ["role", "Role"],
               ["city", "City"],
               ["email", "Email"],
               ["phone", "Phone"],
@@ -1607,7 +1614,7 @@ function TaskModal({ report, onClose, onCreated, onCreate }) {
   const [loading, setLoading] = useState(false);
   const handleCreate = async () => {
     try {
-      console.log("nikku");
+      // console.log("nikku");
       const taskData = {
         report: reportId,
         reward: { amount: Number(reward) },
@@ -1754,6 +1761,29 @@ function Stat({ label, value, note, icon: Icon, color = "green" }) {
 }
 
 function Volunteers({ data, filter, setFilter, onSelect }) {
+  useEffect(() => {
+    const getAllVolunteers = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const response = await axios.get(
+          "http://localhost:5001/volunteerProfile/all",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        console.log("FULL RESPONSE:", response.data);
+      } catch (error) {
+        console.log("ERROR:", error.response?.data || error);
+      }
+    };
+
+    getAllVolunteers();
+  }, []);
+
   const money = (n) => `₹${n.toLocaleString("en-IN")}`;
   const tone = (s) =>
     ["Critical", "Escalated", "Rejected"].includes(s)
