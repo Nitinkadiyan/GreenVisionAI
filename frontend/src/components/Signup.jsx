@@ -38,7 +38,8 @@ export default function SignUp() {
   const [role, setRole] = useState("citizen");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [profilePreview, setProfilePreview] = useState(null);
+  const [profilePicture, setProfilePicture] = useState(null);
+  const [profilePreview,setProfilePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
@@ -88,7 +89,7 @@ export default function SignUp() {
   const handleProfilePicture = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
+    setProfilePicture(file);
     setProfilePreview(URL.createObjectURL(file));
   };
   const handleSubmit = async (event) => {
@@ -116,15 +117,15 @@ export default function SignUp() {
         formData.append("longitude", form.longitude);
       }
       formData.append("role", role);
-      if (form.role === "government" && form.accessCode) {
-        formData.append("accessCode", form.aczcessCode);
+      if (role === "government" && form.accessCode) {
+        formData.append("accessCode", form.accessCode.trim());
       }
-      // if (form.profilePicture) {
-      //   formData.append(
-      //     "profilePicture",
-      //     form.profilePicture
-      //   );
-      // }
+      if (profilePicture) {
+        formData.append(
+          "profilePicture",
+          profilePicture
+        );
+      }
 
       try {
         const response = await axios.post(
@@ -476,7 +477,7 @@ export default function SignUp() {
                     {profilePreview ? (
                       <img
                         src={profilePreview}
-                        alt="Profile preview"
+                        alt="Profile Picture"
                         className="size-full object-cover"
                       />
                     ) : (

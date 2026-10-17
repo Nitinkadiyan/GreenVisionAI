@@ -217,6 +217,7 @@ function Sidebar({
   setMobileOpen,
   setLogout,
   user,
+  reportsCount,
 }) {
   console.log(user);
   const nav = [
@@ -269,7 +270,13 @@ function Sidebar({
         </div>
         <div className="mb-6 flex items-center gap-3 rounded-2xl bg-emerald-50/70 p-3">
           <div className="relative">
-            <Avatar small />
+            <img
+              src={
+                user?.profilePicture?.url || "https://via.placeholder.com/40"
+              }
+              alt="Profile"
+              className="h-10 w-10 rounded-full object-cover"
+            />
             <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-emerald-50 bg-emerald-500" />
           </div>
           <div className="min-w-0 flex-1">
@@ -303,7 +310,7 @@ function Sidebar({
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${view === key || (key === "reports" && view === "reportDetail") ? "bg-emerald-600 text-white shadow-md shadow-emerald-100" : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"}`}
               >
                 <Icon size={18} />
-                <span className="flex-1 text-left">{label}</span>
+                <span className="flex-1 text-left">{  reportsCount}</span>
                 {key === "reports" ? (
                   <ChevronDown
                     size={15}
@@ -382,7 +389,7 @@ function Header({ setView, setMobileOpen, query, setQuery, user }) {
         </button>
         <div>
           <p className="text-sm font-medium text-slate-500">
-            Welcome back, Jatin
+            Welcome back,Nitin Kadiyan
           </p>
           <h1 className="text-lg font-bold tracking-tight text-slate-900 md:text-xl">
             Let&apos;s make our environment cleaner together.
@@ -415,7 +422,11 @@ function Header({ setView, setMobileOpen, query, setQuery, user }) {
           <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white" />
         </button>
         <button onClick={() => setView("profile")} aria-label="Open profile">
-          <Avatar small user={user} />
+          <img
+            src={user?.profilePicture?.url || "https://via.placeholder.com/40"}
+            alt="Profile"
+            className="h-10 w-10 rounded-full object-cover"
+          />
         </button>
       </div>
     </header>
@@ -594,7 +605,15 @@ function ReportsView({ setView, query, setQuery, setSelectedReport }) {
     const fetchReports = async () => {
       try {
         setLoading(true);
-        const response = await api.get("/reports/my-reports");
+        const token = localStorage.getItem("token");
+        const response = await axios.get(
+          "http://localhost:5001/reports/my-reports",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
         console.log("Reports from backend:", response.data);
         setReports(response.data.reports || []);
       } catch (error) {
@@ -1237,7 +1256,7 @@ function NotificationsView() {
   );
 }
 
-function ProfileView({ setLogout, user }) {
+function ProfileView({ setLogout, user, setUser }) {
   const navigate = useNavigate();
   const handleLogout = async () => {
     console.log("logout function started");
@@ -1250,7 +1269,46 @@ function ProfileView({ setLogout, user }) {
     }
   };
   const [editing, setEditing] = useState(false);
-
+  const [form, setForm] = useState({
+    name: user?.name || "",
+    phone: user?.phone || "",
+    email: user?.email || "",
+    city: user?.location?.city || "",
+    area: user?.location?.area || "",
+  });
+  const handleSave = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.patch(
+        "http://localhost:5001/update-user",
+        {
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          city: form.city,
+          area: form.area,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      const updatedUser = response.data.user;
+      console.log("Updated user:", response.data);
+      setUser(updatedUser);
+      setEditing(false);
+    } catch (error) {
+      console.log(error.message);
+      console.log("Update Profile Error");
+    }
+  };
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  };
   return (
     <div className="p-5 md:p-8">
       <SectionTitle
@@ -1259,11 +1317,15 @@ function ProfileView({ setLogout, user }) {
       />
       <div className="max-w-3xl rounded-3xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
         <div className="flex flex-wrap items-center gap-5 border-b border-slate-100 pb-7">
-          <Avatar user={user} />
+          <img
+            src={user.profilePicture?.url}
+            alt="Profile"
+            className="h-18 w-18 rounded-full object-cover"
+          />
           <div className="flex-1">
             <h2 className="text-xl font-bold text-slate-900">{user.name}</h2>
             <p className="mt-1 text-sm text-slate-500">
-              Bangalore, India · Citizen
+              {user.location.city} · {user.role}
             </p>
             <button className="mt-3 flex items-center gap-2 text-xs font-bold text-emerald-600">
               <Upload size={14} />
@@ -1272,7 +1334,13 @@ function ProfileView({ setLogout, user }) {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => setEditing(!editing)}
+              onClick={() => {
+                if (editing) {
+                  handleSave();
+                } else {
+                  setEditing(true);
+                }
+              }}
               className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700"
             >
               {editing ? "Save Changes" : "Edit Profile"}
@@ -1287,19 +1355,24 @@ function ProfileView({ setLogout, user }) {
         </div>
         <div className="mt-7 grid gap-5 sm:grid-cols-2">
           {[
-            ["Full Name", user.name],
-            ["Email", user.email],
-            ["Phone Number", user.phone],
-            ["City", user.location.city],
-            ["Location", user.location.city],
-            ["Member Since", user.createdAt],
-            ["Role", user.role],
-          ].map(([label, value]) => (
+            ["Full Name", "name", form.name],
+            ["Email", "email", form.email],
+            ["Phone Number", "phone", form.phone],
+            ["City", "city", form.city],
+            ["Location", "area", form.city],
+            [
+              "Member Since",
+              "createdAt",
+              new Date(user.createdAt).toLocaleDateString("en-IN"),
+            ],
+          ].map(([label, field, value]) => (
             <label key={label} className="text-sm font-semibold text-slate-600">
               {label}
               <input
+                name={field}
+                value={value}
+                onChange={handleChange}
                 disabled={!editing}
-                defaultValue={value}
                 className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-normal text-slate-800 outline-none disabled:opacity-80 focus:border-emerald-400"
               />
             </label>
@@ -1371,7 +1444,11 @@ function ContributionView(user) {
               <span className="w-5 text-center font-bold text-slate-400">
                 #{i + 1}
               </span>
-              <Avatar small user={user} />
+              <img
+                src={user.profilePicture?.url}
+                alt="Profile"
+                className="h-10 w-10 rounded-full object-cover"
+              />
               <span className="flex-1 text-sm font-semibold text-slate-700">
                 {name}
               </span>
@@ -1397,6 +1474,45 @@ export default function UserDashboard() {
   const [selectedReport, setSelectedReport] = useState(null);
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [reports, setReports] = useState([]);
+  const [reportsLoading, setReportsLoading] = useState(true);
+  const [reportsError, setReportsError] = useState("");
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        setReportsLoading(true);
+        setReportsError("");
+
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          setReportsError("Please log in first.");
+          return;
+        }
+
+        const response = await axios.get(
+          "http://localhost:5001/reports/my-reports",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+        setReports(response.data.reports || []);
+      } catch (error) {
+        console.error("Error fetching reports:", error);
+        setReportsError(
+          error.response?.data?.message || "Failed to fetch reports",
+        );
+      } finally {
+        setReportsLoading(false);
+      }
+    };
+
+    fetchReports();
+  }, []);
+
   const getUserProfile = async (req, res) => {
     try {
       const token = localStorage.getItem("token");
@@ -1444,7 +1560,7 @@ export default function UserDashboard() {
     ) : view === "notifications" ? (
       <NotificationsView />
     ) : view === "profile" ? (
-      <ProfileView setLogout={setLogout} user={user} />
+      <ProfileView setLogout={setLogout} user={user} setUser={setUser} />
     ) : (
       <ContributionView user={user} />
     );
@@ -1461,6 +1577,7 @@ export default function UserDashboard() {
           setLogout,
           user,
         }}
+        reportsCount={reports.length}
       />
       <div className="min-h-screen lg:pl-72">
         <Header {...{ setView, setMobileOpen, query, setQuery, user }} />

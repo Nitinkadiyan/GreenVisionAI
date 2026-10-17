@@ -1,6 +1,6 @@
-const Volunteer = require("../models/Volunteer");
-const User = require("../models/User");
 
+const User = require("../models/User.js");
+const Volunteer = require("../models/Volunteer.js");
 const createVolunteer = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -61,7 +61,7 @@ const getMyVolunteerProfile = async (req, res) => {
 const getAllVolunteers = async (req, res) => {
   try {
     const Volunteers = await Volunteer.find()
-      .populate("userId", "name email phone location profilePicture")
+      .populate("userId")
       .populate("currentTask");
     return res.status(200).json({
       success: true,

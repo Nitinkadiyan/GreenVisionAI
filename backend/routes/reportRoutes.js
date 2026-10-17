@@ -32,11 +32,11 @@ router.post(
 router.get(
   "/get-reports",
   verifyToken,
-  authorizeRoles("citizen"),
+ 
   getAllReports,
 );
 
-router.get("/my-reports", verifyToken, authorizeRoles("citizen"), getMyReports);
+router.get("/my-reports", verifyToken, getMyReports);
 router.get(
   "/get-report/:id",
   verifyToken,

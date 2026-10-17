@@ -102,7 +102,7 @@ export default function Login() {
       const response = await axios.post("http://localhost:5001/login", {
         email: email,
         password: password,
-        role: role,
+        
       });
       console.log(response.data.token);
       const token = response.data.token;
@@ -111,8 +111,15 @@ export default function Login() {
     }
       localStorage.setItem("token",response.data.token);
        console.log("Token saved:", localStorage.getItem("token"));
-    navigate("/user-home-page");
+      
       console.log("Login response:", response);
+      const role = response.data.user.role;
+      if(role == "government"){
+        navigate("/government-page");
+      }
+      else{
+        navigate("/user-home-page");
+      }
     } catch (error) {
       console.log("login failed");
       console.log(error.message);
@@ -324,32 +331,7 @@ export default function Login() {
                 </a>
               </div>
 
-              <div>
-                <p className="mb-2 text-xs font-semibold tracking-wide text-foreground">
-                  Login As
-                </p>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {roles.map((r) => {
-                    const active = role === r.id;
-                    return (
-                      <button
-                        key={r.id}
-                        type="button"
-                        aria-pressed={active}
-                        onClick={() => setRole(r.id)}
-                        className={`flex justify-around align-middle justify-items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 sm:flex-col sm:items-start ${
-                          active
-                            ? "border-primary bg-primary/10 text-primary shadow-soft"
-                            : "border-border bg-card/70 text-muted-foreground hover:border-primary/30"
-                        }`}
-                      >
-                        {/* <r.icon className="h-4 w-4 shrink-0" /> */}
-                        <span className="leading-snug">{r.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+             
 
               {formError && (
                 <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/8 px-3.5 py-3 text-xs font-medium text-destructive">

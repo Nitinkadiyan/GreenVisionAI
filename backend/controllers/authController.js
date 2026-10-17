@@ -3,6 +3,9 @@ const { createSecretToken } = require("../utils/secretToken.js");
 const bcrypt = require("bcrypt");
 const otpTemplate = require("../templates/otpTemplate");
 const sendEmail = require("../utils/sendEmail.js");
+const cloudinary = require("../utils/cloudinary.js");
+const dotenv = require("dotenv");
+require("dotenv").config();
 const Signup = async (req, res) => {
   try {
     console.log(req.body);
@@ -16,6 +19,7 @@ const Signup = async (req, res) => {
       confirmPassword,
       createdAt,
       role,
+      accessCode,
     } = req.body;
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -27,7 +31,28 @@ const Signup = async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
-
+    if (role == "government") {
+      if (!accessCode) {
+        return res.status(400).json({
+          success: false,
+          message: "Government accessCode not found",
+        });
+      }
+      if (accessCode !== process.env.GOVERNMENT_ACCESS_CODE) {
+        return res.status(403).json({
+          success: false,
+          message: "Invalid government access code",
+        });
+      }
+    }
+    let profilePicture=null;
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path);
+      profilePicture = {
+        url: result.secure_url,
+        publicId: result.public_id,
+      };
+    }
     const user = await User.create({
       email,
       phone,
@@ -44,6 +69,7 @@ const Signup = async (req, res) => {
       isVerified: false,
       createdAt,
       role,
+      profilePicture:profilePicture,
     });
 
     const html = otpTemplate(user.name, otp);
@@ -298,24 +324,18 @@ const updateUser = async (req, res) => {
       });
     }
     const { name, email, city, phone } = req.body;
-    await User.updateOne(
-      {
-        email,
-      },
-      {
-        $set: {
-          name: name,
-          email: email,
-          "location.city": city,
-          phone: phone,
-        },
-      },
+    user.name =name;
+    user.email =email;
+    user.phone =phone;
+    user.location.city = city;
+    await user.save();
+    const updatedUser = await User.findById(req.user.id).select(
+      "-password -confirmPassword",
     );
-    const updatedUser = await User.findById(req.user.id).select("-password -confirmPassword");
     return res.status(201).json({
       success: true,
       message: "User Updated Successfully",
-      user:updatedUser,
+      user: updatedUser,
     });
   } catch (err) {
     console.log(err);

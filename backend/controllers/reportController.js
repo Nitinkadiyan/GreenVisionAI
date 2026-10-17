@@ -155,7 +155,7 @@ const getMyReports = async (req, res) => {
     const reports = await Report.find({ userId: req.user.id }).sort({
       createdAt: -1,
     });
-    if (!reports) {
+    if (reports.length ==0) {
       return res.status(404).json({
         success: false,
         message: "No reports found!",

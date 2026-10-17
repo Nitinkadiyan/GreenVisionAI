@@ -7,6 +7,7 @@ import {
   ArrowUpRight,
   Bell,
   Mail,
+  TrendingUp,
   Phone,
   Save,
   Check,
@@ -39,7 +40,68 @@ import {
   Zap,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
+const volunteers = [
+  {
+    name: "Aarav Menon",
+    email: "aarav.m@example.com",
+    city: "Bengaluru",
+    area: "Koramangala",
+    score: 96,
+    completed: 28,
+    accepted: 31,
+    progress: 2,
+    rate: "90%",
+    rewards: 12400,
+    status: "Active",
+    joined: "Jan 2026",
+    color: "bg-emerald-100 text-emerald-800",
+  },
+  {
+    name: "Ananya Rao",
+    email: "ananya.r@example.com",
+    city: "Bengaluru",
+    area: "HSR Layout",
+    score: 92,
+    completed: 22,
+    accepted: 25,
+    progress: 1,
+    rate: "88%",
+    rewards: 9800,
+    status: "Active",
+    joined: "Feb 2026",
+    color: "bg-violet-100 text-violet-800",
+  },
+  {
+    name: "Rahul Mehta",
+    email: "rahul.m@example.com",
+    city: "Bengaluru",
+    area: "Bellandur",
+    score: 87,
+    completed: 18,
+    accepted: 24,
+    progress: 3,
+    rate: "75%",
+    rewards: 7600,
+    status: "Active",
+    joined: "Mar 2026",
+    color: "bg-amber-100 text-amber-800",
+  },
+  {
+    name: "Priya Nair",
+    email: "priya.n@example.com",
+    city: "Bengaluru",
+    area: "Indiranagar",
+    score: 78,
+    completed: 14,
+    accepted: 18,
+    progress: 0,
+    rate: "78%",
+    rewards: 5900,
+    status: "Inactive",
+    joined: "Nov 2025",
+    color: "bg-sky-100 text-sky-800",
+  },
+];
 const notifications = [
   {
     title: "New critical report submitted",
@@ -111,6 +173,8 @@ export default function governmentDashboard() {
   const [reportState, setReportState] = useState([]);
   const [cleanupTasks, setCleanupTasks] = useState([]);
   const [profile, setProfile] = useState(null);
+  const [volFilter, setVolFilter] = useState("All");
+  const [selectedVolunteer, setSelectedVolunteer] = useState(null);
   const navigate = useNavigate();
   const TotalReports = reportState.length;
   const TotalCleanuptasks = cleanupTasks.length;
@@ -168,8 +232,8 @@ export default function governmentDashboard() {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log(response);
-      console.log(response.data.user);
+      // console.log(response);
+      // console.log(response.data.user);
       setProfile(response.data.user);
     } catch (error) {
       console.log(error);
@@ -200,7 +264,7 @@ export default function governmentDashboard() {
     getAllCleanups();
   }, []);
   const getAllCleanups = async () => {
-    console.log("nikku doing work");
+    // console.log("nikku doing work");
     const token = localStorage.getItem("token");
     const response = await axios.get(
       "http://localhost:5001/volunteer/clean-up-tasks",
@@ -210,7 +274,7 @@ export default function governmentDashboard() {
         },
       },
     );
-    console.log("FULL Cleanup Response:", response.data.cleanupTasks);
+    // console.log("FULL Cleanup Response:", response.data.cleanupTasks);
     setCleanupTasks(response.data.cleanupTasks || []);
   };
 
@@ -227,7 +291,7 @@ export default function governmentDashboard() {
         },
       );
 
-      console.log("FULL RESPONSE:", response.data);
+      // console.log("FULL RESPONSE:", response.data);
       // console.log("REPORTS:", response.data.reports);
 
       setReportState(response.data.reports || []);
@@ -235,6 +299,13 @@ export default function governmentDashboard() {
       console.log(error);
     }
   };
+  const filteredVolunteers = volunteers.filter(
+    (v) =>
+      volFilter === "All" ||
+      (volFilter === "Active" && v.status === "Active") ||
+      (volFilter === "Top contributors" && v.score > 90) ||
+      (volFilter === "Recently joined" && v.joined.includes("2026")),
+  );
   const filteredReports = useMemo(
     () =>
       reportState.filter((report) => {
@@ -278,7 +349,7 @@ export default function governmentDashboard() {
           },
         },
       );
-      console.log(response);
+      // console.log(response);
       console.log("Task Created :", response.data);
       return response.data;
     } catch (error) {
@@ -305,7 +376,7 @@ export default function governmentDashboard() {
         },
       );
 
-      console.log("Report approved:", response.data);
+      // console.log("Report approved:", response.data);
 
       // Update frontend immediately
       setReportState((currentReports) =>
@@ -495,6 +566,20 @@ export default function governmentDashboard() {
               chooseNav={chooseNav}
             />
           )}
+          {active === "volunteers" &&
+            (selectedVolunteer ? (
+              <VolunteerDetail
+                volunteer={selectedVolunteer}
+                onBack={() => setSelectedVolunteer(null)}
+              />
+            ) : (
+              <Volunteers
+                data={filteredVolunteers}
+                filter={volFilter}
+                setFilter={setVolFilter}
+                onSelect={setSelectedVolunteer}
+              />
+            ))}{" "}
           {active === "reports" && (
             <Reports
               reports={filteredReports}
@@ -511,6 +596,7 @@ export default function governmentDashboard() {
               }}
             />
           )}
+          {active == "rewards" && <Rewards />}
           {active === "tasks" && (
             <Tasks
               cleanupTasks={cleanupTasks}
@@ -519,7 +605,9 @@ export default function governmentDashboard() {
           )}
           {active !== "dashboard" &&
             active !== "reports" &&
-            active !== "tasks" && (
+            active !== "tasks" &&
+            active !== "volunteers" &&
+            active !== "rewards" && (
               <Placeholder active={active} setActive={chooseNav} />
             )}
         </main>
@@ -1231,7 +1319,7 @@ function Placeholder({ active, setActive }) {
 function Profile({ profile, setProfile, notify, chooseNav }) {
   const [draft, setDraft] = useState({
     name: profile.name,
-    role: profile.role,
+
     city: profile.location?.city,
     email: profile.email,
     phone: profile.phone,
@@ -1253,8 +1341,16 @@ function Profile({ profile, setProfile, notify, chooseNav }) {
           },
         },
       );
+      const updatedUser = response.data.user;
       console.log(response.data);
-      setDraft(response.data.user);
+      setDraft({
+        name: updatedUser.name,
+        role: updatedUser.role,
+        city: updatedUser.location?.city || "",
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+      });
+      setProfile(updatedUser);
       notify("Profile Updated Successfully");
     } catch (error) {
       console.log(error);
@@ -1272,7 +1368,7 @@ function Profile({ profile, setProfile, notify, chooseNav }) {
             {profile?.name?.charAt(0).toUpperCase() || "GO"}
           </div>
           <h2 className="mt-5 text-2xl font-bold">{draft.name}</h2>
-          <p className="mt-1 text-muted-foreground">{draft.role}</p>
+
           <div className="mt-6 flex flex-col gap-3 text-sm">
             <p>
               <MapPin className="mr-2 inline text-primary" size={16} />
@@ -1313,7 +1409,6 @@ function Profile({ profile, setProfile, notify, chooseNav }) {
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {[
               ["name", "Full name"],
-              ["role", "Role"],
               ["city", "City"],
               ["email", "Email"],
               ["phone", "Phone"],
@@ -1519,7 +1614,7 @@ function TaskModal({ report, onClose, onCreated, onCreate }) {
   const [loading, setLoading] = useState(false);
   const handleCreate = async () => {
     try {
-      console.log("nikku");
+      // console.log("nikku");
       const taskData = {
         report: reportId,
         reward: { amount: Number(reward) },
@@ -1628,5 +1723,520 @@ function TaskModal({ report, onClose, onCreated, onCreate }) {
         </div>
       </div>
     </div>
+  );
+}
+function Header({ title, description, action }) {
+  return (
+    <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <div>
+        <p className="mb-1 text-[11px] font-bold uppercase tracking-[.16em] text-emerald-700/70">
+          City environmental department
+        </p>
+        <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
+        <p className="mt-1 text-sm text-slate-500">{description}</p>
+      </div>
+      {action}
+    </div>
+  );
+}
+function Stat({ label, value, note, icon: Icon, color = "green" }) {
+  return (
+    <Card className="p-5">
+      <div className="flex justify-between">
+        <div>
+          <p className="text-xs text-slate-500">{label}</p>
+          <p className="mt-2 text-2xl font-bold">{value}</p>
+          <p className="mt-1 text-[11px] font-medium text-emerald-700">
+            {note}
+          </p>
+        </div>
+        <div
+          className={`rounded-xl p-2.5 ${color === "amber" ? "bg-amber-50 text-amber-600" : color === "blue" ? "bg-sky-50 text-sky-600" : "bg-emerald-50 text-emerald-700"}`}
+        >
+          <Icon size={19} />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function Volunteers({ data, filter, setFilter, onSelect }) {
+  useEffect(() => {
+    const getAllVolunteers = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const response = await axios.get(
+          "http://localhost:5001/volunteerProfile/all",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        console.log("FULL RESPONSE:", response.data);
+      } catch (error) {
+        console.log("ERROR:", error.response?.data || error);
+      }
+    };
+
+    getAllVolunteers();
+  }, []);
+
+  const money = (n) => `₹${n.toLocaleString("en-IN")}`;
+  const tone = (s) =>
+    ["Critical", "Escalated", "Rejected"].includes(s)
+      ? "red"
+      : ["Pending Review", "Pending", "Under review"].includes(s)
+        ? "amber"
+        : ["Approved", "Resolved", "Paid", "Verified", "Active"].includes(s)
+          ? "green"
+          : s === "In Progress"
+            ? "blue"
+            : "slate";
+  return (
+    <>
+      <Header
+        title="Volunteers"
+        description="Understand participation, reliability, and contribution from citizen cleanup teams."
+      />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Stat
+          label="Active volunteers"
+          value="126"
+          note="18 new this month"
+          icon={Users}
+        />
+        <Stat
+          label="Tasks completed"
+          value="842"
+          note="↑ 14.8% this month"
+          icon={CheckCircle2}
+        />
+        <Stat
+          label="Average score"
+          value="86.4"
+          note="Across contributors"
+          icon={TrendingUp}
+          color="blue"
+        />
+        <Stat
+          label="Total rewards"
+          value="₹4.82L"
+          note="Distributed to date"
+          icon={Sparkles}
+          color="amber"
+        />
+      </div>
+      <Card className="mt-6 overflow-hidden">
+        <div className="flex flex-wrap gap-2 border-b border-slate-100 p-4">
+          {["All", "Active", "Top contributors", "Recently joined"].map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`rounded-lg px-3 py-2 text-xs font-semibold ${filter === f ? "bg-[#073b35] text-white" : "text-slate-500"}`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-237.5 text-left">
+            <thead>
+              <tr className="border-b border-slate-100 text-[11px] uppercase tracking-wider text-slate-400">
+                <th className="px-5 py-4">Volunteer</th>
+                <th className="px-5 py-4">Location</th>
+                <th className="px-5 py-4">Score</th>
+                <th className="px-5 py-4">Completed</th>
+                <th className="px-5 py-4">In progress</th>
+                <th className="px-5 py-4">Completion</th>
+                <th className="px-5 py-4">Rewards</th>
+                <th className="px-5 py-4">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((v) => (
+                <tr
+                  key={v.name}
+                  onClick={() => onSelect(v)}
+                  className="cursor-pointer border-b border-slate-50 hover:bg-emerald-50/30"
+                >
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex size-9 items-center justify-center rounded-full text-xs font-bold ${v.color}`}
+                      >
+                        {v.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{v.name}</p>
+                        <p className="mt-1 text-[11px] text-slate-400">
+                          {v.email}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-5 py-4 text-xs">
+                    {v.area}, {v.city}
+                  </td>
+                  <td className="px-5 py-4 text-sm font-bold text-emerald-700">
+                    {v.score}
+                  </td>
+                  <td className="px-5 py-4 text-sm font-semibold">
+                    {v.completed}
+                  </td>
+                  <td className="px-5 py-4 text-sm">{v.progress}</td>
+                  <td className="px-5 py-4 text-sm font-semibold">{v.rate}</td>
+                  <td className="px-5 py-4 text-sm font-semibold">
+                    {money(v.rewards)}
+                  </td>
+                  <td className="px-5 py-4">
+                    <Badge tone={tone(v.status)}>{v.status}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </>
+  );
+}
+function VolunteerDetail({ volunteer: v }) {
+  const rewards = [
+    {
+      volunteer: "Aarav Menon",
+      task: "Koramangala plastic cleanup",
+      location: "Koramangala",
+      reward: 1800,
+      date: "22 Sep 2026",
+      status: "Paid",
+      verification: "Verified",
+    },
+    {
+      volunteer: "Ananya Rao",
+      task: "HSR community bin cleanup",
+      location: "HSR Layout",
+      reward: 1200,
+      date: "20 Sep 2026",
+      status: "Paid",
+      verification: "Verified",
+    },
+    {
+      volunteer: "Rahul Mehta",
+      task: "Bellandur lake cleanup",
+      location: "Bellandur",
+      reward: 2200,
+      date: "19 Sep 2026",
+      status: "Pending",
+      verification: "Under review",
+    },
+    {
+      volunteer: "Priya Nair",
+      task: "Indiranagar road cleanup",
+      location: "Indiranagar",
+      reward: 950,
+      date: "15 Sep 2026",
+      status: "Paid",
+      verification: "Verified",
+    },
+  ];
+
+  const money = (n) => `₹${n.toLocaleString("en-IN")}`;
+  const tone = (s) =>
+    ["Critical", "Escalated", "Rejected"].includes(s)
+      ? "red"
+      : ["Pending Review", "Pending", "Under review"].includes(s)
+        ? "amber"
+        : ["Approved", "Resolved", "Paid", "Verified", "Active"].includes(s)
+          ? "green"
+          : s === "In Progress"
+            ? "blue"
+            : "slate";
+  return (
+    <div className="px-6 pb-7">
+      <div className="flex items-center gap-4">
+        <div
+          className={`flex size-16 items-center justify-center rounded-full text-xl font-bold ${v.color}`}
+        >
+          {v.name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")}
+        </div>
+        <div>
+          <h2 className="text-xl font-bold">{v.name}</h2>
+          <p className="mt-1 text-sm text-slate-500">{v.email}</p>
+          <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
+            <MapPin size={12} />
+            {v.area}, {v.city}
+          </p>
+        </div>
+        <Badge tone={tone(v.status)}>{v.status}</Badge>
+      </div>
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          ["Score", v.score],
+          ["Completed", v.completed],
+          ["Accepted", v.accepted],
+          ["Rewards", money(v.rewards)],
+        ].map((x) => (
+          <div key={x[0]} className="rounded-xl bg-slate-50 p-3">
+            <p className="text-[10px] uppercase tracking-wider text-slate-400">
+              {x[0]}
+            </p>
+            <p className="mt-2 text-lg font-bold">{x[1]}</p>
+          </div>
+        ))}
+      </div>
+      <h3 className="mt-6 font-bold">Recent work</h3>
+      <div className="mt-3 space-y-3">
+        {rewards.slice(0, 3).map((r) => (
+          <div
+            key={r.task}
+            className="flex items-center gap-3 rounded-xl border border-slate-100 p-3"
+          >
+            <CheckCircle2 size={16} className="text-emerald-600" />
+            <div className="flex-1">
+              <p className="text-xs font-semibold">{r.task}</p>
+              <p className="mt-1 text-[11px] text-slate-400">
+                {r.location} · {r.date}
+              </p>
+            </div>
+            <p className="text-xs font-bold text-emerald-700">
+              {money(r.reward)}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+function Card({ children, className = "" }) {
+  return (
+    <div
+      className={`rounded-2xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgba(15,61,52,.04)] ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Rewards() {
+  const tone = (s) =>
+    ["Critical", "Escalated", "Rejected"].includes(s)
+      ? "red"
+      : ["Pending Review", "Pending", "Under review"].includes(s)
+        ? "amber"
+        : ["Approved", "Resolved", "Paid", "Verified", "Active"].includes(s)
+          ? "green"
+          : s === "In Progress"
+            ? "blue"
+            : "slate";
+
+  const money = (n) => `₹${n.toLocaleString("en-IN")}`;
+  const rewards = [
+    {
+      volunteer: "Aarav Menon",
+      task: "Koramangala plastic cleanup",
+      location: "Koramangala",
+      reward: 1800,
+      date: "22 Sep 2026",
+      status: "Paid",
+      verification: "Verified",
+    },
+    {
+      volunteer: "Ananya Rao",
+      task: "HSR community bin cleanup",
+      location: "HSR Layout",
+      reward: 1200,
+      date: "20 Sep 2026",
+      status: "Paid",
+      verification: "Verified",
+    },
+    {
+      volunteer: "Rahul Mehta",
+      task: "Bellandur lake cleanup",
+      location: "Bellandur",
+      reward: 2200,
+      date: "19 Sep 2026",
+      status: "Pending",
+      verification: "Under review",
+    },
+    {
+      volunteer: "Priya Nair",
+      task: "Indiranagar road cleanup",
+      location: "Indiranagar",
+      reward: 950,
+      date: "15 Sep 2026",
+      status: "Paid",
+      verification: "Verified",
+    },
+  ];
+  const nav = [
+    ["dashboard", "Dashboard", Activity],
+    ["reports", "Reports", FileSearch],
+    ["tasks", "Cleanup Tasks", ClipboardCheck],
+    ["map", "Environmental Map", Globe2],
+    ["volunteers", "Volunteers", Users],
+    ["rewards", "Rewards", Sparkles],
+    ["notifications", "Notifications", Bell],
+    ["settings", "Settings", Settings],
+  ];
+  return (
+    <>
+      <Header
+        title="Rewards"
+        description="Track verified cleanup contributions and reward distribution across the city."
+      />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <Stat
+          label="Total distributed"
+          value="₹4.82L"
+          note="Since launch"
+          icon={Sparkles}
+        />
+        <Stat
+          label="This month"
+          value="₹38,450"
+          note="↑ 18.2% vs Aug"
+          icon={TrendingUp}
+          color="blue"
+        />
+        <Stat
+          label="This year"
+          value="₹3.94L"
+          note="82% of annual budget"
+          icon={Target}
+        />
+        <Stat
+          label="Volunteers rewarded"
+          value="184"
+          note="12 added this month"
+          icon={Users}
+        />
+        <Stat
+          label="Pending rewards"
+          value="₹12,800"
+          note="7 awaiting review"
+          icon={Clock3}
+          color="amber"
+        />
+      </div>
+      <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
+        <Card className="p-6">
+          <h3 className="font-bold">Monthly rewards distribution</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            Verified reward value in INR
+          </p>
+          <div className="mt-8 flex h-56 items-end gap-2">
+            {[42, 56, 48, 68, 61, 82, 76, 91, 72, 88, 96, 84].map((h, i) => (
+              <div key={i} className="flex flex-1 flex-col items-center gap-2">
+                <div
+                  className="w-full rounded-t-md bg-emerald-400"
+                  style={{ height: `${h}%` }}
+                />
+                <span className="text-[10px] text-slate-400">
+                  {
+                    [
+                      "J",
+                      "F",
+                      "M",
+                      "A",
+                      "M",
+                      "J",
+                      "J",
+                      "A",
+                      "S",
+                      "O",
+                      "N",
+                      "D",
+                    ][i]
+                  }
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+        <Card className="p-6">
+          <h3 className="font-bold">Volunteer reward summary</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            Top contributors this year
+          </p>
+          <div className="mt-5 space-y-4">
+            {volunteers.slice(0, 3).map((v) => (
+              <div key={v.name} className="flex items-center gap-3">
+                <div
+                  className={`flex size-9 items-center justify-center rounded-full text-xs font-bold ${v.color}`}
+                >
+                  {v.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-semibold">{v.name}</p>
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    {v.completed} completed tasks · {v.rate} rate
+                  </p>
+                </div>
+                <p className="text-sm font-bold">{money(v.rewards)}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+      <Card className="mt-6 overflow-hidden">
+        <div className="border-b border-slate-100 p-5">
+          <h3 className="font-bold">Reward transaction history</h3>
+          <p className="mt-1 text-xs text-slate-500">
+            Every reward is tied to verified cleanup evidence.
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-200 text-left">
+            <thead>
+              <tr className="border-b border-slate-100 text-[11px] uppercase tracking-wider text-slate-400">
+                <th className="px-5 py-4">Volunteer</th>
+                <th className="px-5 py-4">Cleanup task</th>
+                <th className="px-5 py-4">Reward</th>
+                <th className="px-5 py-4">Date</th>
+                <th className="px-5 py-4">Status</th>
+                <th className="px-5 py-4">Verification</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rewards.map((r) => (
+                <tr key={r.task} className="border-b border-slate-50">
+                  <td className="px-5 py-4 text-sm font-semibold">
+                    {r.volunteer}
+                  </td>
+                  <td className="px-5 py-4 text-xs">
+                    {r.task}
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      {r.location}
+                    </p>
+                  </td>
+                  <td className="px-5 py-4 text-sm font-bold">
+                    {money(r.reward)}
+                  </td>
+                  <td className="px-5 py-4 text-xs text-slate-500">{r.date}</td>
+                  <td className="px-5 py-4">
+                    <Badge tone={tone(r.status)}>{r.status}</Badge>
+                  </td>
+                  <td className="px-5 py-4">
+                    <Badge tone={tone(r.verification)}>{r.verification}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </>
   );
 }
