@@ -40,68 +40,68 @@ import {
   Zap,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-const volunteers = [
-  {
-    name: "Aarav Menon",
-    email: "aarav.m@example.com",
-    city: "Bengaluru",
-    area: "Koramangala",
-    score: 96,
-    completed: 28,
-    accepted: 31,
-    progress: 2,
-    rate: "90%",
-    rewards: 12400,
-    status: "Active",
-    joined: "Jan 2026",
-    color: "bg-emerald-100 text-emerald-800",
-  },
-  {
-    name: "Ananya Rao",
-    email: "ananya.r@example.com",
-    city: "Bengaluru",
-    area: "HSR Layout",
-    score: 92,
-    completed: 22,
-    accepted: 25,
-    progress: 1,
-    rate: "88%",
-    rewards: 9800,
-    status: "Active",
-    joined: "Feb 2026",
-    color: "bg-violet-100 text-violet-800",
-  },
-  {
-    name: "Rahul Mehta",
-    email: "rahul.m@example.com",
-    city: "Bengaluru",
-    area: "Bellandur",
-    score: 87,
-    completed: 18,
-    accepted: 24,
-    progress: 3,
-    rate: "75%",
-    rewards: 7600,
-    status: "Active",
-    joined: "Mar 2026",
-    color: "bg-amber-100 text-amber-800",
-  },
-  {
-    name: "Priya Nair",
-    email: "priya.n@example.com",
-    city: "Bengaluru",
-    area: "Indiranagar",
-    score: 78,
-    completed: 14,
-    accepted: 18,
-    progress: 0,
-    rate: "78%",
-    rewards: 5900,
-    status: "Inactive",
-    joined: "Nov 2025",
-    color: "bg-sky-100 text-sky-800",
-  },
-];
+// const volunteers = [
+//   {
+//     name: "Aarav Menon",
+//     email: "aarav.m@example.com",
+//     city: "Bengaluru",
+//     area: "Koramangala",
+//     score: 96,
+//     completed: 28,
+//     accepted: 31,
+//     progress: 2,
+//     rate: "90%",
+//     rewards: 12400,
+//     status: "Active",
+//     joined: "Jan 2026",
+//     color: "bg-emerald-100 text-emerald-800",
+//   },
+//   {
+//     name: "Ananya Rao",
+//     email: "ananya.r@example.com",
+//     city: "Bengaluru",
+//     area: "HSR Layout",
+//     score: 92,
+//     completed: 22,
+//     accepted: 25,
+//     progress: 1,
+//     rate: "88%",
+//     rewards: 9800,
+//     status: "Active",
+//     joined: "Feb 2026",
+//     color: "bg-violet-100 text-violet-800",
+//   },
+//   {
+//     name: "Rahul Mehta",
+//     email: "rahul.m@example.com",
+//     city: "Bengaluru",
+//     area: "Bellandur",
+//     score: 87,
+//     completed: 18,
+//     accepted: 24,
+//     progress: 3,
+//     rate: "75%",
+//     rewards: 7600,
+//     status: "Active",
+//     joined: "Mar 2026",
+//     color: "bg-amber-100 text-amber-800",
+//   },
+//   {
+//     name: "Priya Nair",
+//     email: "priya.n@example.com",
+//     city: "Bengaluru",
+//     area: "Indiranagar",
+//     score: 78,
+//     completed: 14,
+//     accepted: 18,
+//     progress: 0,
+//     rate: "78%",
+//     rewards: 5900,
+//     status: "Inactive",
+//     joined: "Nov 2025",
+//     color: "bg-sky-100 text-sky-800",
+//   },
+// ];
 const notifications = [
   {
     title: "New critical report submitted",
@@ -172,6 +172,7 @@ export default function governmentDashboard() {
   const [toast, setToast] = useState("");
   const [reportState, setReportState] = useState([]);
   const [cleanupTasks, setCleanupTasks] = useState([]);
+  const [volunteers, setVolunteers] = useState([]);
   const [profile, setProfile] = useState(null);
   const [volFilter, setVolFilter] = useState("All");
   const [selectedVolunteer, setSelectedVolunteer] = useState(null);
@@ -224,6 +225,28 @@ export default function governmentDashboard() {
       console.log(error);
     }
   };
+  const getVolunteers = async (req, res) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        "http://localhost:5001/volunteerProfile/all",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      console.log("API RESPONSE:",response.data);
+      setVolunteers(response.data.Volunteers);
+    } catch (error) {
+      console.log(error);
+      alert("Something is wrong.Please try again");
+    }
+  };
+   useEffect(() => {
+    getVolunteers();
+  }, []);
+  // getVolunteers();
   const getUserProfile = async (req, res) => {
     try {
       const token = localStorage.getItem("token");
@@ -299,13 +322,6 @@ export default function governmentDashboard() {
       console.log(error);
     }
   };
-  const filteredVolunteers = volunteers.filter(
-    (v) =>
-      volFilter === "All" ||
-      (volFilter === "Active" && v.status === "Active") ||
-      (volFilter === "Top contributors" && v.score > 90) ||
-      (volFilter === "Recently joined" && v.joined.includes("2026")),
-  );
   const filteredReports = useMemo(
     () =>
       reportState.filter((report) => {
@@ -574,7 +590,7 @@ export default function governmentDashboard() {
               />
             ) : (
               <Volunteers
-                data={filteredVolunteers}
+                data={volunteers}
                 filter={volFilter}
                 setFilter={setVolFilter}
                 onSelect={setSelectedVolunteer}
@@ -596,7 +612,7 @@ export default function governmentDashboard() {
               }}
             />
           )}
-          {active == "rewards" && <Rewards />}
+          {active == "rewards" && <Rewards volunteers={volunteers}/>}
           {active === "tasks" && (
             <Tasks
               cleanupTasks={cleanupTasks}
@@ -1190,12 +1206,12 @@ function Tasks({ onCreate, cleanupTasks, handleCreate }) {
     "Completed",
     "Cancelled",
   ];
-
+ 
   const filteredTasks =
     taskFilter === "All"
       ? cleanupTasks
       : cleanupTasks.filter((task) => task.status === taskFilter);
-
+   console.log(filteredTasks);
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -1241,9 +1257,9 @@ function Tasks({ onCreate, cleanupTasks, handleCreate }) {
               className="grid gap-3 border-b border-slate-100 px-5 py-4 last:border-0 md:grid-cols-[1fr_1fr_1.4fr_0.8fr_1fr_1fr] md:items-center md:gap-4"
             >
               <div>
-                <p className="text-xs font-bold">{task._id}</p>
+                <p className="text-xs font-bold">{task.report?.location?.latitude}</p>
                 <p className="mt-1 text-[11px] text-slate-400">
-                  Report {task.report?.id}
+                   {task.report?._id}
                 </p>
               </div>
               <p className="text-sm font-bold text-emerald-700">
@@ -1772,7 +1788,7 @@ function Volunteers({ data, filter, setFilter, onSelect }) {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-          }
+          },
         );
 
         console.log("FULL RESPONSE:", response.data);
@@ -1783,7 +1799,7 @@ function Volunteers({ data, filter, setFilter, onSelect }) {
 
     getAllVolunteers();
   }, []);
-
+ const volunteerList = Array.isArray(data) ? data : [];
   const money = (n) => `₹${n.toLocaleString("en-IN")}`;
   const tone = (s) =>
     ["Critical", "Escalated", "Rejected"].includes(s)
@@ -1856,9 +1872,9 @@ function Volunteers({ data, filter, setFilter, onSelect }) {
               </tr>
             </thead>
             <tbody>
-              {data.map((v) => (
+              {volunteerList.map((v) => (
                 <tr
-                  key={v.name}
+                  key={v._id}
                   onClick={() => onSelect(v)}
                   className="cursor-pointer border-b border-slate-50 hover:bg-emerald-50/30"
                 >
@@ -1867,15 +1883,12 @@ function Volunteers({ data, filter, setFilter, onSelect }) {
                       <div
                         className={`flex size-9 items-center justify-center rounded-full text-xs font-bold ${v.color}`}
                       >
-                        {v.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
+                        {v._id}
                       </div>
                       <div>
                         <p className="text-sm font-semibold">{v.name}</p>
                         <p className="mt-1 text-[11px] text-slate-400">
-                          {v.email}
+                          {v.completionPercentage}
                         </p>
                       </div>
                     </div>
@@ -1884,15 +1897,15 @@ function Volunteers({ data, filter, setFilter, onSelect }) {
                     {v.area}, {v.city}
                   </td>
                   <td className="px-5 py-4 text-sm font-bold text-emerald-700">
-                    {v.score}
+                    {v.points}
                   </td>
                   <td className="px-5 py-4 text-sm font-semibold">
-                    {v.completed}
+                    {v.status}
                   </td>
-                  <td className="px-5 py-4 text-sm">{v.progress}</td>
-                  <td className="px-5 py-4 text-sm font-semibold">{v.rate}</td>
+                  <td className="px-5 py-4 text-sm">{v.tasksAccepted}</td>
+                  <td className="px-5 py-4 text-sm font-semibold">{v.tasksCompleted}</td>
                   <td className="px-5 py-4 text-sm font-semibold">
-                    {money(v.rewards)}
+                    {v.rewardsRedeemed}
                   </td>
                   <td className="px-5 py-4">
                     <Badge tone={tone(v.status)}>{v.status}</Badge>
@@ -1963,10 +1976,7 @@ function VolunteerDetail({ volunteer: v }) {
         <div
           className={`flex size-16 items-center justify-center rounded-full text-xl font-bold ${v.color}`}
         >
-          {v.name
-            .split(" ")
-            .map((n) => n[0])
-            .join("")}
+          {v.name}
         </div>
         <div>
           <h2 className="text-xl font-bold">{v.name}</h2>
@@ -1983,7 +1993,7 @@ function VolunteerDetail({ volunteer: v }) {
           ["Score", v.score],
           ["Completed", v.completed],
           ["Accepted", v.accepted],
-          ["Rewards", money(v.rewards)],
+          ["Rewards", v.rewards],
         ].map((x) => (
           <div key={x[0]} className="rounded-xl bg-slate-50 p-3">
             <p className="text-[10px] uppercase tracking-wider text-slate-400">
@@ -2026,7 +2036,7 @@ function Card({ children, className = "" }) {
   );
 }
 
-function Rewards() {
+function Rewards({volunteers=[]}) {
   const tone = (s) =>
     ["Critical", "Escalated", "Rejected"].includes(s)
       ? "red"
@@ -2168,15 +2178,13 @@ function Rewards() {
             Top contributors this year
           </p>
           <div className="mt-5 space-y-4">
-            {volunteers.slice(0, 3).map((v) => (
+            {(Array.isArray(volunteers) ? volunteers : []).map((v) => (
               <div key={v.name} className="flex items-center gap-3">
                 <div
                   className={`flex size-9 items-center justify-center rounded-full text-xs font-bold ${v.color}`}
                 >
-                  {v.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
+                  {v.name}
+                    
                 </div>
                 <div className="flex-1">
                   <p className="text-xs font-semibold">{v.name}</p>
@@ -2184,7 +2192,7 @@ function Rewards() {
                     {v.completed} completed tasks · {v.rate} rate
                   </p>
                 </div>
-                <p className="text-sm font-bold">{money(v.rewards)}</p>
+                <p className="text-sm font-bold">{v.rewards}</p>
               </div>
             ))}
           </div>

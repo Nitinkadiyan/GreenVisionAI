@@ -25,7 +25,7 @@ router.patch(
 router.post(
   "/create-cleanup-task",
   verifyToken,
-  authorizeRoles("citizen"),
+  authorizeRoles("government"),
   createCleanupTask,
 );
 router.get(

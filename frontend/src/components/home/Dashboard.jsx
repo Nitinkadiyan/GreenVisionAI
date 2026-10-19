@@ -122,60 +122,6 @@ const cleanupTasks = [
   },
 ];
 
-const navReports = [
-  "All Reports",
-  "Pending Review",
-  "Accepted by Government",
-  "Rejected by Government",
-  "Assigned Cleanup",
-  "In Progress",
-  "Completed",
-];
-const stats = [
-  [
-    "My Reports",
-    "24",
-    "Total submitted",
-    FileText,
-    "bg-emerald-50 text-emerald-700",
-  ],
-  [
-    "Pending Reports",
-    "3",
-    "Awaiting government review",
-    Clock3,
-    "bg-amber-50 text-amber-700",
-  ],
-  [
-    "Active Volunteer Tasks",
-    "2",
-    "Currently in progress",
-    Activity,
-    "bg-sky-50 text-sky-700",
-  ],
-  [
-    "Completed Tasks",
-    "12",
-    "Successfully completed",
-    CheckCircle2,
-    "bg-violet-50 text-violet-700",
-  ],
-  [
-    "Total Rewards",
-    "₹2,450",
-    "Total earned",
-    Gift,
-    "bg-orange-50 text-orange-700",
-  ],
-  [
-    "My Stars",
-    "1,240",
-    "Community contribution score",
-    Star,
-    "bg-lime-50 text-lime-700",
-  ],
-];
-
 function Badge({ children, tone = "slate" }) {
   const tones = {
     green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -217,7 +163,7 @@ function Sidebar({
   setMobileOpen,
   setLogout,
   user,
-  reportsCount,
+  reportCounts,
 }) {
   console.log(user);
   const nav = [
@@ -230,13 +176,70 @@ function Sidebar({
     ["profile", User, "My Profile"],
   ];
   const counts = {
-    "Pending Review": 2,
-    "Accepted by Government": 4,
-    "Rejected by Government": 1,
-    "Assigned Cleanup": 2,
-    "In Progress": 1,
-    Completed: 7,
+    "All Reports": reportCounts.all,
+    "Pending Review": reportCounts.pending,
+    "Accepted by Government": reportCounts.accepted,
+    "Rejected by Government": reportCounts.rejected,
+    "Assigned Cleanup": reportCounts.assigned,
+    "In Progress": reportCounts.progress,
+    Completed: reportCounts.completed,
   };
+  const pendingReports = reports.filter(
+    (r) => r.status === "Pending Review",
+  ).length;
+  const navReports = [
+    "All Reports",
+    "Pending Review",
+    "Accepted by Government",
+    "Rejected by Government",
+    "Assigned Cleanup",
+    "In Progress",
+    "Completed",
+  ];
+  const stats = [
+    [
+      "My Reports",
+      reports.length,
+      "Total submitted",
+      FileText,
+      "bg-emerald-50 text-emerald-700",
+    ],
+    [
+      "Pending Reports",
+      "3",
+      "Awaiting government review",
+      Clock3,
+      "bg-amber-50 text-amber-700",
+    ],
+    [
+      "Active Volunteer Tasks",
+      "2",
+      "Currently in progress",
+      Activity,
+      "bg-sky-50 text-sky-700",
+    ],
+    [
+      "Completed Tasks",
+      "12",
+      "Successfully completed",
+      CheckCircle2,
+      "bg-violet-50 text-violet-700",
+    ],
+    [
+      "Total Rewards",
+      "₹2,450",
+      "Total earned",
+      Gift,
+      "bg-orange-50 text-orange-700",
+    ],
+    [
+      "My Stars",
+      "1,240",
+      "Community contribution score",
+      Star,
+      "bg-lime-50 text-lime-700",
+    ],
+  ];
   return (
     <>
       {mobileOpen && (
@@ -310,7 +313,7 @@ function Sidebar({
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${view === key || (key === "reports" && view === "reportDetail") ? "bg-emerald-600 text-white shadow-md shadow-emerald-100" : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"}`}
               >
                 <Icon size={18} />
-                <span className="flex-1 text-left">{  reportsCount}</span>
+                <span className="flex-1 text-left">{label}</span>
                 {key === "reports" ? (
                   <ChevronDown
                     size={15}
@@ -336,7 +339,7 @@ function Sidebar({
                       className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs text-slate-500 hover:bg-emerald-50 hover:text-emerald-700"
                     >
                       <span>{item}</span>
-                      {counts[item] && (
+                      {counts[item] !== undefined && (
                         <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold">
                           {counts[item]}
                         </span>
@@ -453,13 +456,73 @@ function SectionTitle({ title, subtitle, action, onAction }) {
   );
 }
 
-function Dashboard({ setView, query }) {
+function Dashboard({ setView, query, reportsCount }) {
   const navigate = useNavigate();
   const filtered = reports.filter((r) =>
     `${r.title} ${r.category} ${r.location}`
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
+  const pendingReports = reports.filter(
+    (r) => r.status === "Pending Review",
+  ).length;
+  const progressReports = reports.filter(
+    (r) => r.status === "In Progress",
+  ).length;
+  const completedReports = reports.filter((r) => r.status === "Completed").length;
+  const navReports = [
+    "All Reports",
+    "Pending Review",
+    "Accepted by Government",
+    "Rejected by Government",
+    "Assigned Cleanup",
+    "In Progress",
+    "Completed",
+  ];
+  const stats = [
+    [
+      "My Reports",
+      reportsCount,
+      "Total submitted",
+      FileText,
+      "bg-emerald-50 text-emerald-700",
+    ],
+    [
+      "Pending Reports",
+      pendingReports,
+      "Awaiting government review",
+      Clock3,
+      "bg-amber-50 text-amber-700",
+    ],
+    [
+      "Active Volunteer Tasks",
+      progressReports,
+      "Currently in progress",
+      Activity,
+      "bg-sky-50 text-sky-700",
+    ],
+    [
+      "Completed Tasks",
+      completedReports,
+      "Successfully completed",
+      CheckCircle2,
+      "bg-violet-50 text-violet-700",
+    ],
+    [
+      "Total Rewards",
+      "₹2,450",
+      "Total earned",
+      Gift,
+      "bg-orange-50 text-orange-700",
+    ],
+    [
+      "My Stars",
+      "1,240",
+      "Community contribution score",
+      Star,
+      "bg-lime-50 text-lime-700",
+    ],
+  ];
   return (
     <div className="space-y-8 p-5 md:p-8">
       <section className="relative overflow-hidden rounded-3xl bg-linear-to-br from-emerald-700 via-emerald-600 to-teal-500 p-6 text-white shadow-xl shadow-emerald-100 md:p-9">
@@ -1543,7 +1606,11 @@ export default function UserDashboard() {
   };
   const content =
     view === "dashboard" ? (
-      <Dashboard setView={setView} query={query} />
+      <Dashboard
+        setView={setView}
+        query={query}
+        reportsCount={reports.length}
+      />
     ) : view === "reports" ? (
       <ReportsView
         setView={setView}
@@ -1564,6 +1631,28 @@ export default function UserDashboard() {
     ) : (
       <ContributionView user={user} />
     );
+
+  const reportCounts = useMemo(() => {
+    return {
+      all: reports.length,
+
+      pending: reports.filter((r) => r.status === "Pending Review").length,
+
+      accepted: reports.filter((r) => r.status === "Accepted by Government")
+        .length,
+
+      rejected: reports.filter((r) => r.status === "Rejected by Government")
+        .length,
+
+      assigned: reports.filter((r) => r.status === "Assigned Cleanup").length,
+
+      inProgress: reports.filter((r) => r.status === "In Progress").length,
+
+      completed: reports.filter(
+        (r) => r.status === "Completed" || r.status === "Resolved",
+      ).length,
+    };
+  }, [reports]);
   return (
     <div className="min-h-screen bg-[#f7faf8] text-slate-900">
       <Sidebar
@@ -1576,8 +1665,8 @@ export default function UserDashboard() {
           setMobileOpen,
           setLogout,
           user,
+          reportCounts,
         }}
-        reportsCount={reports.length}
       />
       <div className="min-h-screen lg:pl-72">
         <Header {...{ setView, setMobileOpen, query, setQuery, user }} />
