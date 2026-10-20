@@ -165,7 +165,7 @@ function Sidebar({
   user,
   reportCounts,
 }) {
-  console.log(user);
+  // console.log(user);
   const nav = [
     ["dashboard", LayoutDashboard, "Dashboard"],
     ["reports", FileText, "My Reports"],
@@ -642,8 +642,7 @@ function ReportCard({ report, onClick }) {
         </div>
         <p className="mt-3 flex items-center gap-1 truncate text-xs text-slate-500">
           <MapPin size={13} />
-          {report.location?.address ||
-            `${report.location?.latitude ?? "N/A"}, ${report.location?.longitude ?? "N/A"}`}
+          {report.location?.address?.split(",").slice(0, 2).join(", ") || ""}
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Badge tone={tone}>{report.status || "Unknown"}</Badge>

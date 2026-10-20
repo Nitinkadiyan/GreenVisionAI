@@ -24,6 +24,7 @@ const reportSchema = new mongoose.Schema(
       latitude: Number,
       longitude: Number,
       address: String,
+      city:String,
     },
     status: {
       default: "Pending Review",

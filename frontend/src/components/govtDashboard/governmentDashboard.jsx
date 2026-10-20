@@ -837,7 +837,7 @@ function Dashboard({
                     {report.description}
                   </p>
                   <p className="mt-1 flex items-center gap-1 text-[10px] text-slate-400">
-                    <MapPin size={11} /> {report.location.latitude}
+                    <MapPin size={11} /> {report.location?.address?.split(",").slice(0, 3).join(", ") || ""}
                   </p>
                 </div>
                 <ChevronRight
@@ -1137,9 +1137,9 @@ function ReportCard({ report, onReview, onTask, formatDate }) {
         </p>
         <div className="mt-4 flex items-center gap-1.5 text-xs text-slate-500">
           <MapPin size={14} className="text-emerald-600" />{" "}
-          {report.location.latitude}
-          <span className="text-slate-300">•</span> {report.location.latitude},{" "}
-          {report.location.longitude}
+          {report.location?.address?.split(",").slice(0, 2).join(", ") || ""}
+          <span className="text-slate-300">•</span> ({report.location.latitude},{" "}
+          {report.location.longitude})
         </div>
         <div className="mt-5 grid grid-cols-3 gap-2 border-y border-slate-100 py-4">
           <div>
@@ -1582,10 +1582,10 @@ function ReportModal({
                 <p className="text-sm font-bold">Location</p>
               </div>
               <p className="mt-2 text-sm font-semibold">
-                {report.location.latitude}
+                {report.location?.address?.split(",").slice(0, 4).join(", ") || ""}
               </p>
               <p className="mt-1 text-xs text-slate-400">
-                {report.location.latitude}, {report.location.longitude}
+                {report.location.latitude},{report.location.longitude}
               </p>
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
