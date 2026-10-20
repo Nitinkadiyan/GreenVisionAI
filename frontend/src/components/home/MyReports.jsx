@@ -763,7 +763,7 @@
 
 // export default MyReports;
 "use client";
-import api from "../../api/axios"
+import api from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -895,7 +895,7 @@ function AnalysisResults({ response, setResult }) {
           <div className="relative">
             <Trash2 className="pointer-events-none absolute left-3 top-3.5 size-4 text-emerald-600" />
             <input
-              value={response?.wasteType||""}
+              value={response?.wasteType || ""}
               onChange={(e) => update("wasteType", e.target.value)}
               className={`${inputClass} pl-10`}
             />
@@ -956,7 +956,7 @@ function AnalysisResults({ response, setResult }) {
             className={`${inputClass} resize-none`}
           />
         </div>
-                <div>
+        <div>
           <FieldLabel>Environmental Risk</FieldLabel>
           <textarea
             value={response?.environmentalRisk || ""}
@@ -965,7 +965,7 @@ function AnalysisResults({ response, setResult }) {
             className={`${inputClass} resize-none`}
           />
         </div>
-                <div>
+        <div>
           <FieldLabel>Suggested Authority</FieldLabel>
           <textarea
             value={response?.suggestedAuthority || ""}
@@ -987,13 +987,11 @@ function AnalysisResults({ response, setResult }) {
             <option>Urgent</option>
           </select>
         </div> */}
-          <div>
+        <div>
           <FieldLabel>AI Summary</FieldLabel>
           <textarea
             value={response?.summary || ""}
-            onChange={(e) =>
-              update("summary", e.target.value)
-            }
+            onChange={(e) => update("summary", e.target.value)}
             rows={3}
             className={`${inputClass} resize-none`}
           />
@@ -1022,6 +1020,8 @@ export default function CreateReport() {
   const [analyzed, setAnalyzed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState("");
   const [errors, setErrors] = useState({});
   const [coordinates, setCoordinates] = useState({
     latitude: "",
@@ -1034,7 +1034,7 @@ export default function CreateReport() {
     () => () => image?.preview && URL.revokeObjectURL(image.preview),
     [image],
   );
- 
+
   const chooseImage = (file) => {
     if (!file || !file.type.startsWith("image/")) return;
     setImage({ file, preview: URL.createObjectURL(file) });
@@ -1050,129 +1050,186 @@ export default function CreateReport() {
     return !Object.keys(next).length;
   };
   const analyze = async () => {
-  if (!validate()) return;
+    if (!validate()) return;
 
-  if (!coordinates.latitude || !coordinates.longitude) {
-    alert("Please provide your location");
-    return;
-  }
+    if (!coordinates.latitude || !coordinates.longitude) {
+      alert("Please provide your location");
+      return;
+    }
 
-  try {
-    setProcessing(true);
+    try {
+      setProcessing(true);
 
-    const formData = new FormData();
+      const formData = new FormData();
 
-    formData.append("image", image.file);
-    formData.append("description", description);
-    formData.append("latitude", coordinates.latitude);
-    formData.append("longitude", coordinates.longitude);
+      formData.append("image", image.file);
+      formData.append("address", address);
+      formData.append("city", city);
+      formData.append("description", description);
+      formData.append("latitude", coordinates.latitude);
+      formData.append("longitude", coordinates.longitude);
 
-    const response = await api.post(
-      "/analyzeReport/analyze",
-      formData
-    );
+      const response = await api.post("/analyzeReport/analyze", formData);
 
-    console.log("AI Response:", response.data);
+      console.log("AI Response:", response.data);
 
-    setResult(response.data.analysis);
+      setResult(response.data.analysis);
 
-    setProcessing(false);
-    setAnalyzed(true);
+      setProcessing(false);
+      setAnalyzed(true);
+    } catch (error) {
+      console.error("AI analysis error:", error);
 
-  } catch (error) {
-    console.error("AI analysis error:", error);
+      setProcessing(false);
 
-    setProcessing(false);
-
-    alert(
-      error.response?.data?.message ||
-      "Failed to analyze the report"
-    );
-  }
-};
-  const locate = () => {
-    if (navigator.geolocation)
-      navigator.geolocation.getCurrentPosition(
-        (pos) =>
-          setCoordinates({
-            latitude: pos.coords.latitude.toFixed(6),
-            longitude: pos.coords.longitude.toFixed(6),
-          }),
-        () => setCoordinates({ latitude: "40.7128", longitude: "-74.0060" }),
-      );
-    else setCoordinates({ latitude: "40.7128", longitude: "-74.0060" });
+      alert(error.response?.data?.message || "Failed to analyze the report");
+    }
   };
-  // const submit = () => {
-  //   if (
-  //     !result.wasteType ||
-  //     !result.estimatedQuantity ||
-  //     !result.recommendedAction
-  //   )
-  //     return;
-  //   setSubmitting(true);
-  //   setTimeout(() => {
-  //     setSubmitting(false);
-  //     setSubmitted(true);
-  //   }, 1600);
-  // };
+  const locate = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser.");
+      return;
+    }
 
-const submit = async () => {
-  if (!result) {
-    alert("Please analyze the report first");
-    return;
-  }
+    setLocating(true);
+    setLocationError("");
 
-  if (!image) {
-    alert("Please upload an image");
-    return;
-  }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const latitude = pos.coords.latitude;
+        const longitude = pos.coords.longitude;
 
-  if (!description.trim()) {
-    alert("Please give the description");
-    return;
-  }
+        // 1. Save the coordinates in React state
+        setCoordinates({
+          latitude: latitude.toFixed(6),
+          longitude: longitude.toFixed(6),
+        });
 
-  if (!coordinates.latitude || !coordinates.longitude) {
-    alert("Please provide your location");
-    return;
-  }
+        try {
+          // 2. Convert coordinates into a readable address
+          const params = new URLSearchParams({
+            format: "jsonv2",
+            lat: String(latitude),
+            lon: String(longitude),
+            addressdetails: "1",
+          });
 
-  try {
-    setSubmitting(true);
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?${params}`,
+          );
 
-    const formData = new FormData();
+          if (!response.ok) {
+            throw new Error("Address lookup failed.");
+          }
 
-    formData.append("image", image.file);
-    formData.append("description", description);
-    formData.append("latitude", coordinates.latitude);
-    formData.append("longitude", coordinates.longitude);
+          const data = await response.json();
+          console.log("data:", data);
+          const details = data.address || {};
+          // console.log(data.address);
+          // 3. Automatically fill the address
+          // console.log("dispaly:" ,data.display_name);
+          // console.log("display2:",data.address,display_name);
+          setAddress(data.display_name || "");
 
-    formData.append(
-      "aiAnalysis",
-      JSON.stringify(result)
+          // 4. Extract the city or nearest available locality
+          const detectedCity =
+            details.city ||
+            details.town ||
+            details.village ||
+            details.municipality ||
+            details.city_district ||
+            details.county ||
+            "";
+          console.log("detected city:", detectedCity);
+          setCity(detectedCity);
+
+          if (!data.display_name) {
+            setLocationError(
+              "Coordinates detected, but no readable address was found.",
+            );
+          } else if (!detectedCity) {
+            setLocationError(
+              "Address detected, but the city could not be identified. Please enter it manually.",
+            );
+          }
+        } catch (error) {
+          console.error("Reverse geocoding error:", error);
+
+          setLocationError(
+            "Coordinates detected, but the address lookup failed. Please enter the address and city manually.",
+          );
+        } finally {
+          setLocating(false);
+        }
+      },
+      (error) => {
+        setLocating(false);
+
+        if (error.code === 1) {
+          setLocationError("Please allow location access in your browser.");
+        } else if (error.code === 2) {
+          setLocationError("Your current location could not be detected.");
+        } else {
+          setLocationError("Location request timed out. Please try again.");
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      },
     );
+  };
 
-    const response = await api.post(
-      "/reports/create-report",
-      formData
-    );
+  const submit = async () => {
+    if (!result) {
+      alert("Please analyze the report first");
+      return;
+    }
 
-    console.log("Report created:", response.data);
+    if (!image) {
+      alert("Please upload an image");
+      return;
+    }
 
-    setSubmitting(false);
-    setSubmitted(true);
+    if (!description.trim()) {
+      alert("Please give the description");
+      return;
+    }
 
-  } catch (error) {
-    console.error("Report submission error:", error);
+    if (!coordinates.latitude || !coordinates.longitude) {
+      alert("Please provide your location");
+      return;
+    }
 
-    setSubmitting(false);
+    try {
+      setSubmitting(true);
 
-    alert(
-      error.response?.data?.message ||
-      "Failed to submit report"
-    );
-  }
-};
+      const formData = new FormData();
+
+      formData.append("image", image.file);
+      formData.append("description", description);
+      formData.append("address", address);
+      formData.append("city", city);
+      formData.append("latitude", coordinates.latitude);
+      formData.append("longitude", coordinates.longitude);
+      console.log(city);
+      formData.append("aiAnalysis", JSON.stringify(result));
+
+      const response = await api.post("/reports/create-report", formData);
+
+      console.log("Report created:", response.data);
+
+      setSubmitting(false);
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Report submission error:", error);
+
+      setSubmitting(false);
+
+      alert(error.response?.data?.message || "Failed to submit report");
+    }
+  };
   if (submitted)
     return (
       <main className="min-h-screen bg-[#f7fbf8] px-5 py-8 text-slate-900 sm:px-8">
@@ -1197,7 +1254,23 @@ const submit = async () => {
               </p>
             </div>
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              <button type="button" onClick={() => navigate("/user-home-page?view=reports")} className="rounded-xl border border-emerald-200 px-4 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50" > View My Reports </button> {/* Dashboard */} <button type="button" onClick={() => navigate("/user-home-page")} className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700" > Back to Dashboard </button>
+              <button
+                type="button"
+                onClick={() => navigate("/user-home-page?view=reports")}
+                className="rounded-xl border border-emerald-200 px-4 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50"
+              >
+                {" "}
+                View My Reports{" "}
+              </button>{" "}
+              {/* Dashboard */}{" "}
+              <button
+                type="button"
+                onClick={() => navigate("/user-home-page")}
+                className="rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+              >
+                {" "}
+                Back to Dashboard{" "}
+              </button>
             </div>
           </div>
         </div>
@@ -1209,10 +1282,10 @@ const submit = async () => {
       <div className="mx-auto max-w-7xl">
         <header className="flex items-center justify-between border-b border-emerald-100 pb-5">
           <button
-            onClick={()=>navigate("/user-home-page")}
+            onClick={() => navigate("/user-home-page")}
             className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-emerald-700"
           >
-            <ArrowLeft className="size-4"/> Back to Dashboard
+            <ArrowLeft className="size-4" /> Back to Dashboard
           </button>
           <div className="flex items-center gap-2 text-sm font-bold tracking-tight text-emerald-700">
             <Leaf className="size-5 fill-emerald-100" /> GreenVision AI
@@ -1415,9 +1488,18 @@ const submit = async () => {
                   <button
                     type="button"
                     onClick={locate}
-                    className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+                    disabled={locating}
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800 disabled:opacity-50"
                   >
-                    <Navigation className="size-4" /> Use My Current Location
+                    <Navigation className="size-4" />{" "}
+                    {locating
+                      ? "Detecting Location..."
+                      : "Use My Current Location"}
+                    {locationError && (
+                      <p className="mt-2 text-sm text-red-600">
+                        {locationError}
+                      </p>
+                    )}
                   </button>
                 </div>
               </div>
@@ -1531,11 +1613,11 @@ const submit = async () => {
                   <button
                     type="button"
                     disabled={
-  submitting ||
-  !result?.wasteType ||
-  !result?.estimatedWasteKg ||
-  !result?.possibleAction
-}
+                      submitting ||
+                      !result?.wasteType ||
+                      !result?.estimatedWasteKg ||
+                      !result?.possibleAction
+                    }
                     onClick={submit}
                     className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-emerald-600 to-green-700 px-5 py-4 text-sm font-bold text-white transition hover:from-emerald-700 hover:to-green-800 disabled:cursor-not-allowed disabled:opacity-50"
                   >

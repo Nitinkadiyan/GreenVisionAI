@@ -85,7 +85,7 @@ const getCleanuptasks = async (req, res) => {
     const cleanupTasks = await CleanupTask.find()
       .populate({
         path: "report",
-        select: "image description",
+        select: "image description location",
       })
       .populate({
         path: "volunteer",

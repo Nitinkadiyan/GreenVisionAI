@@ -5,7 +5,7 @@ const cleanupTaskSchema = new mongoose.Schema(
     report: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Report",
-      requiered: true,
+      required: true,
     },
     reward: {
       amount: {

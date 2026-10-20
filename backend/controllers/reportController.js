@@ -42,7 +42,11 @@ const analyzeReport = async (req, res) => {
 };
 const createReport = async (req, res) => {
   try {
-    const { description, longitude, latitude, aiAnalysis } = req.body;
+    const { description, address, city, longitude, latitude, aiAnalysis } =
+      req.body;
+      console.log("function started");
+      console.log("address :", address);
+      console.log("city",city);
     if (!description) {
       return res.status(400).json({
         success: false,
@@ -86,6 +90,8 @@ const createReport = async (req, res) => {
       location: {
         latitude,
         longitude,
+        address,
+        city,
       },
       imageUrl: uploadedImage.secure_url,
       imagePublicId: uploadedImage.public_id,
@@ -155,7 +161,7 @@ const getMyReports = async (req, res) => {
     const reports = await Report.find({ userId: req.user.id }).sort({
       createdAt: -1,
     });
-    if (reports.length ==0) {
+    if (reports.length == 0) {
       return res.status(404).json({
         success: false,
         message: "No reports found!",
