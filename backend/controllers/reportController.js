@@ -96,6 +96,7 @@ const createReport = async (req, res) => {
       imageUrl: uploadedImage.secure_url,
       imagePublicId: uploadedImage.public_id,
       aiAnalysis: parsedAnalysis,
+      priority:parsedAnalysis.severity,
       status: "Pending Review",
     });
     // if (req.file && fs.existsSync(req.file.path)) {

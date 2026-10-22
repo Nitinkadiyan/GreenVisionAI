@@ -2,7 +2,7 @@
 import axios from "axios";
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-
+import {MapContainer,TileLayer,Marker,Popup,}from "react-leaflet";
 import {
   Activity,
   ArrowLeft,
@@ -469,7 +469,9 @@ function Dashboard({ setView, query, reportsCount }) {
   const progressReports = reports.filter(
     (r) => r.status === "In Progress",
   ).length;
-  const completedReports = reports.filter((r) => r.status === "Completed").length;
+  const completedReports = reports.filter(
+    (r) => r.status === "Completed",
+  ).length;
   const navReports = [
     "All Reports",
     "Pending Review",
@@ -951,6 +953,17 @@ function CleanupPanel() {
 function VolunteerView() {
   const [tasks, setTasks] = useState([]);
   const [active, setActive] = useState(null);
+
+  const [selectedTask, setSelectedTask] = useState(null);
+
+  const openTaskDetails = (task) => {
+    setSelectedTask(task);
+  };
+
+  const closeTaskDetails = () => {
+    setSelectedTask(null);
+  };
+
   const update = (id, status) =>
     setTasks(tasks.map((t) => (t._id === id ? { ...t, status } : t)));
   const getCleanupTasks = async () => {
@@ -987,7 +1000,7 @@ function VolunteerView() {
         return;
       }
       const response = await axios.patch(
-        `http://localhoast:5001/volunteer/${id}/accept`,
+        `http://localhost:5001/volunteer/${id}/accept`,
         {},
         {
           headers: {
@@ -1027,19 +1040,24 @@ function VolunteerView() {
                 <h3 className="font-bold text-slate-900">{task.title}</h3>
                 <p className="mt-2 flex items-center gap-1 text-sm text-slate-500">
                   <MapPin size={15} className="text-emerald-600" />
-                  {task.location}
+                  {task.report?.location?.address
+                    .split(",")
+                    .slice(0, 2)
+                    .join(", ")}
                 </p>
               </div>
               <Badge
                 tone={
-                  task.priority === "High"
+                  task.report.priority === "Critical"
                     ? "red"
-                    : task.priority === "Medium"
-                      ? "amber"
-                      : "green"
+                    : task.priority === "High"
+                      ? "orange"
+                      : task.priority === "Medium"
+                        ? "teal"
+                        : "green"
                 }
               >
-                {task.priority} priority
+                {task.report.priority}
               </Badge>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-4 rounded-2xl bg-slate-50 p-4">
@@ -1052,7 +1070,7 @@ function VolunteerView() {
               <div>
                 <p className="text-xs text-slate-400">Deadline</p>
                 <p className="mt-1 font-semibold text-slate-700">
-                  {task.deadline}
+                  {new Date(task.deadline).toLocaleDateString("en-IN")}
                 </p>
               </div>
             </div>
@@ -1089,7 +1107,11 @@ function VolunteerView() {
                   Accept Assigned Task
                 </button>
               )}
-              <button className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600">
+
+              <button
+                onClick={() => openTaskDetails(task)}
+                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 hover:border-emerald-400 hover:text-emerald-700"
+              >
                 View Task
               </button>
             </div>
@@ -1123,126 +1145,404 @@ function VolunteerView() {
           </div>
         ))}
       </div>
+
+      {selectedTask && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+          onClick={closeTaskDetails}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white p-5 md:p-6">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-emerald-600">
+                  GreenVision AI · Task Details
+                </p>
+
+                <h2 className="mt-1 text-xl font-bold text-slate-900">
+                  {selectedTask.title || "Cleanup Task"}
+                </h2>
+              </div>
+
+              <button
+                onClick={closeTaskDetails}
+                className="rounded-xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-100"
+                aria-label="Close task details"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-6 p-5 md:p-6">
+              {/* Report image */}
+              <div className="overflow-hidden rounded-2xl bg-slate-100">
+                {selectedTask.report?.imageUrl ? (
+                  <img
+                    src={selectedTask.report.imageUrl}
+                    alt={
+                      selectedTask.report.aiAnalysis?.wasteType ||
+                      "Reported waste"
+                    }
+                    className="max-h-96 w-full object-contain"
+                  />
+                ) : (
+                  <div className="flex h-48 items-center justify-center text-sm text-slate-500">
+                    No report image available.
+                  </div>
+                )}
+              </div>
+
+              {/* Task overview */}
+              <section>
+                <h3 className="mb-3 text-lg font-bold text-slate-900">
+                  Cleanup Task Overview
+                </h3>
+
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="rounded-xl bg-emerald-50 p-4">
+                    <p className="text-xs font-medium text-slate-500">Reward</p>
+                    <p className="mt-1 text-xl font-bold text-emerald-700">
+                      {selectedTask.reward?.amount != null
+                        ? `₹${selectedTask.reward.amount}`
+                        : "Not specified"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl bg-slate-50 p-4">
+                    <p className="text-xs font-medium text-slate-500">
+                      Deadline
+                    </p>
+                    <p className="mt-1 font-bold text-slate-800">
+                      {selectedTask.deadline
+                        ? new Date(selectedTask.deadline).toLocaleDateString(
+                            "en-IN",
+                            {
+                              day: "2-digit",
+                              month: "long",
+                              year: "numeric",
+                            },
+                          )
+                        : "Not specified"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl bg-slate-50 p-4">
+                    <p className="text-xs font-medium text-slate-500">
+                      Task Status
+                    </p>
+                    <p className="mt-1 font-bold text-slate-800">
+                      {selectedTask.status || "Unknown"}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {/* Original report information */}
+              <section className="rounded-2xl border border-slate-200 p-5">
+                <h3 className="text-lg font-bold text-slate-900">
+                  Original Environmental Report
+                </h3>
+
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Report ID
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">
+                      {selectedTask.report?._id || selectedTask.report || "N/A"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      <MapPin size={15} />
+                      Location
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-slate-700">
+                      {selectedTask.report?.location?.address ||
+                        "Location not available"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Report Description
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                      {selectedTask.report?.description ||
+                        "No report description available."}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Report Status
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-slate-700">
+                      {selectedTask.report?.status || "Unknown"}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {/* AI analysis */}
+              <section className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-5">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={20} className="text-emerald-600" />
+                  <h3 className="text-lg font-bold text-slate-900">
+                    AI Environmental Analysis
+                  </h3>
+                </div>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-medium text-slate-500">
+                      Waste Type
+                    </p>
+                    <p className="mt-1 font-semibold text-slate-800">
+                      {selectedTask.report?.aiAnalysis?.wasteType || "N/A"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-medium text-slate-500">
+                      Severity
+                    </p>
+                    <p className="mt-1 font-semibold text-slate-800">
+                      {selectedTask.report?.aiAnalysis?.severity || "N/A"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-medium text-slate-500">
+                      AI Confidence
+                    </p>
+                    <p className="mt-1 font-semibold text-slate-800">
+                      {selectedTask.report?.aiAnalysis?.confidence != null
+                        ? `${selectedTask.report.aiAnalysis.confidence}%`
+                        : "N/A"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-medium text-slate-500">
+                      Estimated Waste
+                    </p>
+                    <p className="mt-1 font-semibold text-slate-800">
+                      {selectedTask.report?.aiAnalysis?.estimatedWasteKg != null
+                        ? `${selectedTask.report.aiAnalysis.estimatedWasteKg} kg`
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 border-t border-emerald-100 pt-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    AI Summary
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    {selectedTask.report?.aiAnalysis?.summary ||
+                      "No AI analysis summary available."}
+                  </p>
+                </div>
+              </section>
+
+              {/* Cleanup instructions */}
+              <section>
+                <h3 className="text-lg font-bold text-slate-900">
+                  Cleanup Guidelines
+                </h3>
+
+                <p className="mt-3 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                  {selectedTask.guideline ||
+                    selectedTask.guidelines ||
+                    "Follow the local authority's safety and waste-segregation guidelines."}
+                </p>
+              </section>
+
+              {/* Footer */}
+              <div className="flex justify-end border-t border-slate-100 pt-4">
+                <button
+                  onClick={closeTaskDetails}
+                  className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white hover:bg-emerald-700"
+                >
+                  Close Details
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function MapView({ setView }) {
-  const [selected, setSelected] = useState(0);
-  const markers = [
-    {
-      color: "bg-rose-500",
-      x: "30%",
-      y: "40%",
-      title: "Plastic Waste",
-      place: "Bangalore",
-      severity: "High Severity",
-      date: "Reported Aug 24",
-    },
-    {
-      color: "bg-orange-500",
-      x: "62%",
-      y: "28%",
-      title: "Illegal Dumping",
-      place: "Bellandur",
-      severity: "Medium Severity",
-      date: "Reported Aug 18",
-    },
-    {
-      color: "bg-emerald-500",
-      x: "74%",
-      y: "65%",
-      title: "Overflowing Bin",
-      place: "Indiranagar",
-      severity: "Resolved",
-      date: "Reported Aug 10",
-    },
-  ];
+function MapView({ reports = [], setView, setSelectedReport }) {
+  const [selected, setSelected] = useState(null);
+
+  // Keep only reports with valid geographic coordinates.
+  const mappedReports = reports.filter((report) => {
+    const lat = Number(report.location?.latitude);
+    const lng = Number(report.location?.longitude);
+
+    return (
+      report.location?.latitude !== "" &&
+      report.location?.longitude !== "" &&
+      Number.isFinite(lat) &&
+      Number.isFinite(lng) &&
+      lat >= -90 &&
+      lat <= 90 &&
+      lng >= -180 &&
+      lng <= 180
+    );
+  });
+
   return (
     <div className="p-5 md:p-8">
       <SectionTitle
         title="Environmental Issues Map"
-        subtitle="Explore community reports and cleanup activity around Bangalore."
+        subtitle="Explore environmental reports across India and worldwide. Zoom in to find individual reports."
       />
-      <div className="grid gap-5 xl:grid-cols-[1fr_280px]">
-        <div className="relative min-h-125 overflow-hidden rounded-3xl border border-emerald-100 bg-[#dcefe4] shadow-inner">
-          <div
-            className="absolute inset-0 opacity-60"
-            style={{
-              backgroundImage:
-                "linear-gradient(30deg, transparent 48%, #b8dac6 49%, #b8dac6 50%, transparent 51%), linear-gradient(115deg, transparent 48%, #c1dfce 49%, #c1dfce 50%, transparent 51%)",
-              backgroundSize: "100px 100px",
-            }}
-          />
-          <div className="absolute inset-x-0 top-5 text-center text-xs font-bold uppercase tracking-[0.2em] text-emerald-800/50">
-            Bangalore community map
-          </div>
-          {markers.map((m, i) => (
-            <button
-              key={m.title}
-              onClick={() => setSelected(i)}
-              style={{ left: m.x, top: m.y }}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full p-1.5 shadow-lg ring-4 ring-white/60 transition hover:scale-110 ${m.color}`}
-              aria-label={`Select ${m.title}`}
-            >
-              <MapPin size={20} fill="currentColor" className="text-white" />
-            </button>
-          ))}
-          <div className="absolute bottom-5 left-5 w-56 rounded-2xl border border-white/70 bg-white/90 p-4 shadow-lg backdrop-blur">
-            <p className="font-bold text-slate-800">
-              {markers[selected].title}
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              {markers[selected].place} · {markers[selected].date}
-            </p>
-            <Badge
-              tone={selected === 0 ? "red" : selected === 1 ? "amber" : "green"}
-            >
-              {markers[selected].severity}
-            </Badge>
-            <button
-              onClick={() => setView("reportDetail")}
-              className="mt-3 flex items-center gap-1 text-xs font-bold text-emerald-600"
-            >
-              View Report <ArrowRight size={13} />
-            </button>
+
+      <div className="grid gap-5 xl:grid-cols-[1fr_300px]">
+        {/* Interactive map */}
+        <div className="relative z-0 h-137.5 overflow-hidden rounded-3xl border border-emerald-100 shadow-sm">
+          <MapContainer
+            center={[22.5, 79]}
+            zoom={4}
+            minZoom={2}
+            maxZoom={19}
+            scrollWheelZoom={true}
+            worldCopyJump={true}
+            className="h-full w-full"
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+
+            {mappedReports.map((report) => (
+              <Marker
+                key={report._id}
+                position={[
+                  Number(report.location.latitude),
+                  Number(report.location.longitude),
+                ]}
+                eventHandlers={{
+                  click: () => setSelected(report),
+                }}
+              >
+                <Popup>
+                  <div className="min-w-40">
+                    <strong>
+                      {report.aiAnalysis?.wasteType || "Environmental Report"}
+                    </strong>
+
+                    <p className="mt-1 text-sm">
+                      {report.location?.address || "Location unavailable"}
+                    </p>
+
+                    <p className="mt-1 text-sm">
+                      Status: {report.status || "Unknown"}
+                    </p>
+
+                    <button
+                      onClick={() => {
+                        setSelectedReport(report);
+                        setView("reportDetail");
+                      }}
+                      className="mt-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white"
+                    >
+                      View Report
+                    </button>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+
+          <div className="absolute left-4 top-4 z-1000 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow">
+            <MapPin size={15} className="mr-1 inline text-emerald-600" />
+            {mappedReports.length} mapped reports
           </div>
         </div>
+
+        {/* Report details panel */}
         <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-slate-900">Filter Issues</h3>
-            <ListFilter size={18} className="text-slate-400" />
-          </div>
-          <div className="mt-5 space-y-4">
-            {[
-              "High Severity",
-              "Medium Severity",
-              "Low Severity",
-              "Resolved",
-              "In Progress",
-            ].map((item, i) => (
-              <label
-                key={item}
-                className="flex items-center gap-3 text-sm text-slate-600"
+          <h3 className="font-bold text-slate-900">Report Details</h3>
+
+          {!selected ? (
+            <p className="mt-4 text-sm leading-6 text-slate-500">
+              Click any marker on the map to see its report details.
+            </p>
+          ) : (
+            <div className="mt-4 space-y-4">
+              {selected.imageUrl && (
+                <img
+                  src={selected.imageUrl}
+                  alt={selected.aiAnalysis?.wasteType || "Reported issue"}
+                  className="h-40 w-full rounded-xl object-cover"
+                />
+              )}
+
+              <div>
+                <p className="text-lg font-bold text-slate-800">
+                  {selected.aiAnalysis?.wasteType || "Environmental Report"}
+                </p>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  {selected.location?.address || "Location unavailable"}
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-slate-50 p-3">
+                <p className="text-xs text-slate-500">Status</p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {selected.status || "Unknown"}
+                </p>
+
+                <p className="mt-3 text-xs text-slate-500">Severity</p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {selected.aiAnalysis?.severity || "Unknown"}
+                </p>
+              </div>
+
+              <p className="text-sm leading-6 text-slate-600">
+                {selected.description ||
+                  selected.aiAnalysis?.summary ||
+                  "No description available."}
+              </p>
+
+              <button
+                onClick={() => {
+                  setSelectedReport(selected);
+                  setView("reportDetail");
+                }}
+                className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700"
               >
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="h-4 w-4 accent-emerald-600"
-                />
-                {item}
-                <span
-                  className={`ml-auto h-2.5 w-2.5 rounded-full ${["bg-rose-500", "bg-orange-500", "bg-yellow-400", "bg-emerald-500", "bg-sky-500"][i]}`}
-                />
-              </label>
-            ))}
-          </div>
+                View Full Report
+              </button>
+
+              <button
+                onClick={() => setSelected(null)}
+                className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
+              >
+                Clear Selection
+              </button>
+            </div>
+          )}
+
+          <p className="mt-5 border-t border-slate-100 pt-4 text-xs text-slate-400">
+            Zoom or drag the map to explore other locations.
+          </p>
         </div>
       </div>
     </div>
   );
 }
-
 function NotificationsView() {
   const [items, setItems] = useState([
     {
@@ -1622,7 +1922,11 @@ export default function UserDashboard() {
     ) : view === "volunteer" || view === "tasks" ? (
       <VolunteerView />
     ) : view === "map" ? (
-      <MapView setView={setView} />
+      <MapView
+        setView={setView}
+        reports={reports}
+        setSelectedReport={setSelectedReport}
+      />
     ) : view === "notifications" ? (
       <NotificationsView />
     ) : view === "profile" ? (
