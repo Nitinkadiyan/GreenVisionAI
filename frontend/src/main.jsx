@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 // import Landing from './components/landing/Landing';
-  
+import "leaflet/dist/leaflet.css";
 import UserDashboard from "./components/home/Dashboard.jsx";
 import Navbar from "./components/Navbar.jsx";
 import Signup from "./components/Signup.jsx";
