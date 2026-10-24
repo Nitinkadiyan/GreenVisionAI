@@ -1,6 +1,8 @@
 "use client";
 import axios from "axios";
 import { useMemo, useState, useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+
 import {
   Activity,
   AlertTriangle,
@@ -39,7 +41,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 // const volunteers = [
 //   {
 //     name: "Aarav Menon",
@@ -170,6 +172,9 @@ export default function governmentDashboard() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [readAll, setReadAll] = useState(false);
   const [toast, setToast] = useState("");
+  const [searchParams] = useSearchParams();
+  const initialView = searchParams.get("view") || "dashboard";
+  const [view, setView] = useState(initialView);
   const [reportState, setReportState] = useState([]);
   const [cleanupTasks, setCleanupTasks] = useState([]);
   const [volunteers, setVolunteers] = useState([]);
@@ -236,14 +241,14 @@ export default function governmentDashboard() {
           },
         },
       );
-      console.log("API RESPONSE:",response.data);
+      console.log("API RESPONSE:", response.data);
       setVolunteers(response.data.Volunteers);
     } catch (error) {
       console.log(error);
       alert("Something is wrong.Please try again");
     }
   };
-   useEffect(() => {
+  useEffect(() => {
     getVolunteers();
   }, []);
   // getVolunteers();
@@ -612,11 +617,18 @@ export default function governmentDashboard() {
               }}
             />
           )}
-          {active == "rewards" && <Rewards volunteers={volunteers}/>}
+          {active == "rewards" && <Rewards volunteers={volunteers} />}
           {active === "tasks" && (
             <Tasks
               cleanupTasks={cleanupTasks}
               onCreate={() => setTaskModal(true)}
+            />
+          )}
+          {active == "map" && (
+            <MapView
+              setView={setView}
+              reports={reportState}
+              setSelectedReport={setSelectedReport}
             />
           )}
           {active !== "dashboard" &&
@@ -837,7 +849,11 @@ function Dashboard({
                     {report.description}
                   </p>
                   <p className="mt-1 flex items-center gap-1 text-[10px] text-slate-400">
-                    <MapPin size={11} /> {report.location?.address?.split(",").slice(0, 3).join(", ") || ""}
+                    <MapPin size={11} />{" "}
+                    {report.location?.address
+                      ?.split(",")
+                      .slice(0, 3)
+                      .join(", ") || ""}
                   </p>
                 </div>
                 <ChevronRight
@@ -953,6 +969,169 @@ function Dashboard({
   );
 }
 
+function MapView({ reports = [], setView, setSelectedReport }) {
+  const [selected, setSelected] = useState(null);
+
+  // Keep only reports with valid geographic coordinates.
+  const mappedReports = reports.filter((report) => {
+    const lat = Number(report.location?.latitude);
+    const lng = Number(report.location?.longitude);
+
+    return (
+      report.location?.latitude !== "" &&
+      report.location?.longitude !== "" &&
+      Number.isFinite(lat) &&
+      Number.isFinite(lng) &&
+      lat >= -90 &&
+      lat <= 90 &&
+      lng >= -180 &&
+      lng <= 180
+    );
+  });
+
+  return (
+    <div className="p-5 md:p-8">
+      <SectionTitle
+        title="Environmental Issues Map"
+        subtitle="Explore environmental reports across India and worldwide. Zoom in to find individual reports."
+      />
+
+      <div className="grid gap-5 xl:grid-cols-[1fr_300px]">
+        {/* Interactive map */}
+        <div className="relative z-0 h-137.5 overflow-hidden rounded-3xl border border-emerald-100 shadow-sm">
+          <MapContainer
+            center={[22.5, 79]}
+            zoom={4}
+            minZoom={2}
+            maxZoom={19}
+            scrollWheelZoom={true}
+            worldCopyJump={true}
+            className="h-full w-full"
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+
+            {mappedReports.map((report) => (
+              <Marker
+                key={report._id}
+                position={[
+                  Number(report.location.latitude),
+                  Number(report.location.longitude),
+                ]}
+                eventHandlers={{
+                  click: () => setSelected(report),
+                }}
+              >
+                <Popup>
+                  <div className="min-w-40">
+                    <strong>
+                      {report.aiAnalysis?.wasteType || "Environmental Report"}
+                    </strong>
+
+                    <p className="mt-1 text-sm">
+                      {report.location?.address || "Location unavailable"}
+                    </p>
+
+                    <p className="mt-1 text-sm">
+                      Status: {report.status || "Unknown"}
+                    </p>
+
+                    <button
+                      onClick={() => {
+                        setSelectedReport(report);
+                        setView("reportDetail");
+                      }}
+                      className="mt-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white"
+                    >
+                      View Report
+                    </button>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+
+          <div className="absolute left-4 top-4 z-1000 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow">
+            <MapPin size={15} className="mr-1 inline text-emerald-600" />
+            {mappedReports.length} mapped reports
+          </div>
+        </div>
+
+        {/* Report details panel */}
+        <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+          <h3 className="font-bold text-slate-900">Report Details</h3>
+
+          {!selected ? (
+            <p className="mt-4 text-sm leading-6 text-slate-500">
+              Click any marker on the map to see its report details.
+            </p>
+          ) : (
+            <div className="mt-4 space-y-4">
+              {selected.imageUrl && (
+                <img
+                  src={selected.imageUrl}
+                  alt={selected.aiAnalysis?.wasteType || "Reported issue"}
+                  className="h-40 w-full rounded-xl object-cover"
+                />
+              )}
+
+              <div>
+                <p className="text-lg font-bold text-slate-800">
+                  {selected.aiAnalysis?.wasteType || "Environmental Report"}
+                </p>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  {selected.location?.address || "Location unavailable"}
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-slate-50 p-3">
+                <p className="text-xs text-slate-500">Status</p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {selected.status || "Unknown"}
+                </p>
+
+                <p className="mt-3 text-xs text-slate-500">Severity</p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {selected.aiAnalysis?.severity || "Unknown"}
+                </p>
+              </div>
+
+              <p className="text-sm leading-6 text-slate-600">
+                {selected.description ||
+                  selected.aiAnalysis?.summary ||
+                  "No description available."}
+              </p>
+
+              <button
+                onClick={() => {
+                  setSelectedReport(selected);
+                  setView("reportDetail");
+                }}
+                className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700"
+              >
+                View Full Report
+              </button>
+
+              <button
+                onClick={() => setSelected(null)}
+                className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600"
+              >
+                Clear Selection
+              </button>
+            </div>
+          )}
+
+          <p className="mt-5 border-t border-slate-100 pt-4 text-xs text-slate-400">
+            Zoom or drag the map to explore other locations.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 function Reports({
   reports: visibleReports,
   allReports,
@@ -1100,6 +1279,26 @@ function Reports({
   );
 }
 
+function SectionTitle({ title, subtitle, action, onAction }) {
+  return (
+    <div className="mb-5 flex items-end justify-between gap-4">
+      <div>
+        <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+        {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+      </div>
+      {action && (
+        <button
+          onClick={onAction}
+          className="flex items-center gap-1 text-sm font-bold text-emerald-600 hover:text-emerald-700"
+        >
+          {action}
+          <ArrowRight size={15} />
+        </button>
+      )}
+    </div>
+  );
+}
+
 function ReportCard({ report, onReview, onTask, formatDate }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/30 transition hover:-translate-y-0.5 hover:shadow-md">
@@ -1206,12 +1405,12 @@ function Tasks({ onCreate, cleanupTasks, handleCreate }) {
     "Completed",
     "Cancelled",
   ];
- 
+
   const filteredTasks =
     taskFilter === "All"
       ? cleanupTasks
       : cleanupTasks.filter((task) => task.status === taskFilter);
-   console.log(filteredTasks);
+  console.log(filteredTasks);
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -1257,9 +1456,11 @@ function Tasks({ onCreate, cleanupTasks, handleCreate }) {
               className="grid gap-3 border-b border-slate-100 px-5 py-4 last:border-0 md:grid-cols-[1fr_1fr_1.4fr_0.8fr_1fr_1fr] md:items-center md:gap-4"
             >
               <div>
-                <p className="text-xs font-bold">{task.report?.location?.latitude}</p>
+                <p className="text-xs font-bold">
+                  {task.report?.location?.latitude}
+                </p>
                 <p className="mt-1 text-[11px] text-slate-400">
-                   {task.report?._id}
+                  {task.report?._id}
                 </p>
               </div>
               <p className="text-sm font-bold text-emerald-700">
@@ -1283,14 +1484,14 @@ function Tasks({ onCreate, cleanupTasks, handleCreate }) {
 
 function Placeholder({ active, setActive }) {
   const content = {
-    map: {
-      title: "Environmental map",
-      sub: "Live issue density across the city",
-      icon: Globe2,
-    },
     volunteers: {
       title: "Volunteer network",
       sub: "Manage verified community responders",
+      icon: Users,
+    },
+    map: {
+      title: " ",
+      sub: " ",
       icon: Users,
     },
     rewards: {
@@ -1309,26 +1510,15 @@ function Placeholder({ active, setActive }) {
       icon: Settings,
     },
   }[active];
-  const Icon = content.icon;
+  // const Icon = content.icon;
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <div className="max-w-md text-center">
-        <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-          <Icon size={29} />
-        </div>
-        <h2 className="mt-5 text-2xl font-bold">{content.title}</h2>
-        <p className="mt-2 text-sm text-slate-500">{content.sub}</p>
-        <p className="mt-4 text-xs leading-5 text-slate-400">
-          This operational workspace is ready for live API data. Connect your
-          backend to replace the realistic command center preview.
-        </p>
-        <button
-          onClick={() => setActive("dashboard")}
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#073b35] px-4 py-2.5 text-xs font-bold text-white"
-        >
-          <ChevronLeft size={15} /> Back to dashboard
-        </button>
-      </div>
+    <div className="flex min-h-[30vh] items-center justify-center">
+      <button
+        onClick={() => setActive("dashboard")}
+        className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#073b35] px-4 py-2.5 text-xs font-bold text-white"
+      >
+        <ChevronLeft size={15} /> Back to dashboard
+      </button>
     </div>
   );
 }
@@ -1582,7 +1772,8 @@ function ReportModal({
                 <p className="text-sm font-bold">Location</p>
               </div>
               <p className="mt-2 text-sm font-semibold">
-                {report.location?.address?.split(",").slice(0, 4).join(", ") || ""}
+                {report.location?.address?.split(",").slice(0, 4).join(", ") ||
+                  ""}
               </p>
               <p className="mt-1 text-xs text-slate-400">
                 {report.location.latitude},{report.location.longitude}
@@ -1799,7 +1990,7 @@ function Volunteers({ data, filter, setFilter, onSelect }) {
 
     getAllVolunteers();
   }, []);
- const volunteerList = Array.isArray(data) ? data : [];
+  const volunteerList = Array.isArray(data) ? data : [];
   const money = (n) => `₹${n.toLocaleString("en-IN")}`;
   const tone = (s) =>
     ["Critical", "Escalated", "Rejected"].includes(s)
@@ -1903,7 +2094,9 @@ function Volunteers({ data, filter, setFilter, onSelect }) {
                     {v.status}
                   </td>
                   <td className="px-5 py-4 text-sm">{v.tasksAccepted}</td>
-                  <td className="px-5 py-4 text-sm font-semibold">{v.tasksCompleted}</td>
+                  <td className="px-5 py-4 text-sm font-semibold">
+                    {v.tasksCompleted}
+                  </td>
                   <td className="px-5 py-4 text-sm font-semibold">
                     {v.rewardsRedeemed}
                   </td>
@@ -2036,7 +2229,7 @@ function Card({ children, className = "" }) {
   );
 }
 
-function Rewards({volunteers=[]}) {
+function Rewards({ volunteers = [] }) {
   const tone = (s) =>
     ["Critical", "Escalated", "Rejected"].includes(s)
       ? "red"
@@ -2184,7 +2377,6 @@ function Rewards({volunteers=[]}) {
                   className={`flex size-9 items-center justify-center rounded-full text-xs font-bold ${v.color}`}
                 >
                   {v.name}
-                    
                 </div>
                 <div className="flex-1">
                   <p className="text-xs font-semibold">{v.name}</p>
