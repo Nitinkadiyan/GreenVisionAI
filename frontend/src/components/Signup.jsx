@@ -1,14 +1,15 @@
 "use client";
-import { useNavigate } from "react-router-dom";
 
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+
 import {
   ArrowRight,
   Camera,
   Check,
   Eye,
   EyeOff,
-  // Facebook,
   Leaf,
   Lock,
   Mail,
@@ -21,168 +22,21 @@ import {
   User,
   Users,
 } from "lucide-react";
-import axios from "axios";
-export default function SignUp() {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: "",
-    city: "",
-    area: "",
-    accessCode: "",
-  });
 
-  const [errors, setErrors] = useState({});
-  const [role, setRole] = useState("citizen");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [profilePicture, setProfilePicture] = useState(null);
-  const [profilePreview,setProfilePreview] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const navigate = useNavigate();
-  const updateField = (event) => {
-    const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
-
-    if (errors[name]) {
-      setErrors((current) => ({ ...current, [name]: "" }));
-    }
-  };
-
-  const validate = () => {
-    const nextErrors = {};
-
-    if (!form.name.trim()) nextErrors.name = "Full name is required.";
-    if (!form.email.trim()) {
-      nextErrors.email = "Email address is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      nextErrors.email = "Enter a valid email address.";
-    }
-
-    if (!form.phone.trim()) nextErrors.phone = "Phone number is required.";
-    if (!form.password) {
-      nextErrors.password = "Password is required.";
-    } else if (form.password.length < 8) {
-      nextErrors.password = "Password must contain at least 8 characters.";
-    }
-
-    if (!form.confirmPassword) {
-      nextErrors.confirmPassword = "Please confirm your password.";
-    } else if (form.confirmPassword !== form.password) {
-      nextErrors.confirmPassword = "Passwords do not match.";
-    }
-
-    if (!form.city.trim()) nextErrors.city = "City is required.";
-    if (!form.area.trim()) nextErrors.area = "area is required.";
-    if (!role) nextErrors.role = "Please select a role.";
-
-    if (role === "government" && !form.accessCode.trim()) {
-      nextErrors.accessCode = "Government access code is required.";
-    }
-
-    return nextErrors;
-  };
-
-  const handleProfilePicture = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setProfilePicture(file);
-    setProfilePreview(URL.createObjectURL(file));
-  };
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    console.log("function called");
-    alert(`Signup successfull! Welcome ${form.name}`);
-    setSubmitted(true);
-
-    
-
-    try {
-      setLoading(true);
-      const formData = new FormData();
-      console.log("Form name : ",form.name);
-      formData.append("name", form.name);
-      formData.append("email", form.email);
-      formData.append("phone", form.phone);
-      formData.append("password", form.password);
-      formData.append("confirmPassword", form.confirmPassword);
-      formData.append("city", form.city);
-      formData.append("area", form.area);
-      if (form.latitude) {
-        formData.append("latitude", form.latitude);
-      }
-      if (form.longitude) {
-        formData.append("longitude", form.longitude);
-      }
-      formData.append("role", role);
-      if (role === "government" && form.accessCode) {
-        formData.append("accessCode", form.accessCode.trim());
-      }
-      if (profilePicture) {
-        formData.append(
-          "profilePicture",
-          profilePicture
-        );
-      }
-
-      try {
-        const response = await axios.post(
-        "http://localhost:5001/signup",
-        formData,
-      );
-      const nextErrors = validate(response);
-    console.log(nextErrors);
-    setErrors(nextErrors);
-
-    if (Object.keys(nextErrors).length > 0) {
-      return;
-    }
-    console.log(response.data.token);
-    localStorage.setItem("token",response.data.token);
-    navigate("/verify-email", {
-        state: {
-          email: form.email,
-          role: response.data.role,
-        },
-      });
-      console.log("Signup successful:", response.data);
-      setLoading(false);
-      } catch (error) {
-        console.log(error.response.data);
-        if(error.response.status === 400){
-          setErrors("User already exists");
-          setTimeout(()=>{
-            navigate("/login");
-          },1500);
-        }
-      }
-      
-      console.log("nikku");
-      console.log(form.email);
-      
-    } catch (error) {
-      console.error("Signup failed:", error);
-      setLoading(false);
-
-      setErrors({
-        submit:
-          error.response?.data?.message ||
-          "Something went wrong. Please try again.",
-      });
-    }
-  };
-  const Field = ({
-    id,
-    label,
-    placeholder,
-    icon: Icon,
-    type = "text",
-    required = true,
-    rightElement,
-  }) => (
+// IMPORTANT: Field is outside SignUp to prevent input focus loss.
+function Field({
+  id,
+  label,
+  placeholder,
+  icon: Icon,
+  type = "text",
+  required = true,
+  rightElement,
+  form,
+  errors,
+  updateField,
+}) {
+  return (
     <div className="space-y-2">
       <label htmlFor={id} className="text-sm font-semibold text-slate-700">
         {label}
@@ -198,6 +52,7 @@ export default function SignUp() {
           aria-hidden="true"
           className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-slate-400"
         />
+
         <input
           id={id}
           name={id}
@@ -211,6 +66,7 @@ export default function SignUp() {
             errors[id] ? "border-red-400" : "border-slate-200"
           }`}
         />
+
         {rightElement}
       </div>
 
@@ -221,10 +77,212 @@ export default function SignUp() {
       )}
     </div>
   );
+}
+
+export default function SignUp() {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    city: "",
+    area: "",
+    accessCode: "",
+  });
+
+  const [errors, setErrors] = useState({});
+  const [role, setRole] = useState("citizen");
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [profilePicture, setProfilePicture] = useState(null);
+  const [profilePreview, setProfilePreview] = useState(null);
+
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const navigate = useNavigate();
+
+  // Update form fields
+  const updateField = (event) => {
+    const { name, value } = event.target;
+
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+
+    if (errors[name]) {
+      setErrors((current) => ({
+        ...current,
+        [name]: "",
+      }));
+    }
+  };
+
+  // Form validation
+  const validate = () => {
+    const nextErrors = {};
+
+    if (!form.name.trim()) {
+      nextErrors.name = "Full name is required.";
+    }
+
+    if (!form.email.trim()) {
+      nextErrors.email = "Email address is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      nextErrors.email = "Enter a valid email address.";
+    }
+
+    if (!form.phone.trim()) {
+      nextErrors.phone = "Phone number is required.";
+    }
+
+    if (!form.password) {
+      nextErrors.password = "Password is required.";
+    } else if (form.password.length < 8) {
+      nextErrors.password = "Password must contain at least 8 characters.";
+    }
+
+    if (!form.confirmPassword) {
+      nextErrors.confirmPassword = "Please confirm your password.";
+    } else if (form.confirmPassword !== form.password) {
+      nextErrors.confirmPassword = "Passwords do not match.";
+    }
+
+    if (!form.city.trim()) {
+      nextErrors.city = "City is required.";
+    }
+
+    if (!form.area.trim()) {
+      nextErrors.area = "Area is required.";
+    }
+
+    if (!role) {
+      nextErrors.role = "Please select a role.";
+    }
+
+    if (role === "government" && !form.accessCode.trim()) {
+      nextErrors.accessCode = "Government access code is required.";
+    }
+
+    return nextErrors;
+  };
+
+  // Profile picture upload
+  const handleProfilePicture = (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    setProfilePicture(file);
+    setProfilePreview(URL.createObjectURL(file));
+  };
+
+  // Signup handler
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    // Validate BEFORE sending request
+    const nextErrors = validate();
+
+    setErrors(nextErrors);
+    setSubmitted(false);
+
+    if (Object.keys(nextErrors).length > 0) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const formData = new FormData();
+
+      formData.append("name", form.name);
+      formData.append("email", form.email);
+      formData.append("phone", form.phone);
+      formData.append("password", form.password);
+      formData.append("confirmPassword", form.confirmPassword);
+      formData.append("city", form.city);
+      formData.append("area", form.area);
+
+      if (form.latitude) {
+        formData.append("latitude", form.latitude);
+      }
+
+      if (form.longitude) {
+        formData.append("longitude", form.longitude);
+      }
+
+      formData.append("role", role);
+
+      if (role === "government" && form.accessCode) {
+        formData.append("accessCode", form.accessCode.trim());
+      }
+
+      if (profilePicture) {
+        formData.append("profilePicture", profilePicture);
+      }
+
+      const response = await axios.post(
+        "http://localhost:5001/signup",
+        formData
+      );
+
+      console.log("Signup successful:", response.data);
+
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+      }
+
+      setSubmitted(true);
+
+      navigate("/verify-email", {
+        state: {
+          email: form.email,
+          role: response.data.role,
+        },
+      });
+    } catch (error) {
+      console.error("Signup failed:", error);
+
+      const status = error.response?.status;
+
+      if (status === 400) {
+        setErrors({
+          submit:
+            error.response?.data?.message ||
+            "User already exists or invalid signup details.",
+        });
+
+        if (
+          error.response?.data?.message
+            ?.toLowerCase()
+            .includes("already exists")
+        ) {
+          setTimeout(() => {
+            navigate("/login");
+          }, 1500);
+        }
+      } else {
+        setErrors({
+          submit:
+            error.response?.data?.message ||
+            "Something went wrong. Please try again.",
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <div className="mx-auto flex min-h-screen max-w-[1600px]">
+
+        {/* LEFT SECTION */}
         <section className="relative hidden w-[46%] overflow-hidden bg-emerald-950 px-12 py-12 text-white lg:flex lg:flex-col">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.3),transparent_35%),linear-gradient(145deg,#064e3b,#022c22)]" />
 
@@ -232,6 +290,7 @@ export default function SignUp() {
             <div className="flex size-11 items-center justify-center rounded-2xl bg-emerald-400 text-emerald-950 shadow-lg shadow-emerald-950/30">
               <Leaf className="size-6" />
             </div>
+
             <span className="text-xl font-bold tracking-tight">
               GreenVision AI
             </span>
@@ -245,7 +304,9 @@ export default function SignUp() {
 
             <h1 className="text-balance text-6xl font-bold leading-[1.05] tracking-tight">
               Build a Cleaner,
-              <span className="block text-emerald-300">Smarter Future.</span>
+              <span className="block text-emerald-300">
+                Smarter Future.
+              </span>
             </h1>
 
             <p className="mt-7 max-w-lg text-lg leading-8 text-emerald-100/80">
@@ -257,6 +318,7 @@ export default function SignUp() {
           <div className="relative z-10 my-14 flex min-h-67.5 items-center justify-center">
             <div className="relative flex size-64 items-center justify-center rounded-full border border-emerald-300/20 bg-emerald-400/10 shadow-2xl shadow-emerald-950/40">
               <div className="absolute inset-5 rounded-full border border-emerald-300/20" />
+
               <div className="flex size-28 items-center justify-center rounded-[2rem] bg-emerald-400 text-emerald-950 shadow-xl shadow-emerald-950/40">
                 <TreePine className="size-16" />
               </div>
@@ -303,8 +365,10 @@ export default function SignUp() {
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-400/20 text-emerald-300">
                   <Icon className="size-5" />
                 </div>
+
                 <div>
                   <h2 className="font-semibold">{title}</h2>
+
                   <p className="mt-1 text-sm leading-5 text-emerald-100/70">
                     {text}
                   </p>
@@ -314,48 +378,73 @@ export default function SignUp() {
           </div>
         </section>
 
+        {/* RIGHT SECTION */}
         <section className="flex w-full items-center justify-center px-5 py-8 sm:px-8 lg:w-[54%] lg:px-14 lg:py-12">
           <div className="w-full max-w-2xl">
+
             <div className="mb-8 flex items-center justify-center gap-3 lg:hidden">
               <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-600 text-white">
                 <Leaf className="size-5" />
               </div>
+
               <span className="text-xl font-bold text-emerald-950">
                 GreenVision AI
               </span>
             </div>
 
             <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-9">
+
               <div className="mb-8">
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900">
                   Create Your Account
                 </h1>
+
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   Join GreenVision AI and start making a difference.
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} noValidate className="space-y-6">
+              <form
+                onSubmit={handleSubmit}
+                noValidate
+                className="space-y-6"
+              >
+
+                {/* PERSONAL DETAILS */}
                 <div className="grid gap-5 sm:grid-cols-2">
+
                   <Field
                     id="name"
                     label="Full Name"
                     placeholder="Enter your full name"
                     icon={User}
+                    form={form}
+                    errors={errors}
+                    updateField={updateField}
                   />
+
                   <Field
                     id="email"
                     label="Email Address"
                     placeholder="you@example.com"
                     icon={Mail}
                     type="email"
+                    form={form}
+                    errors={errors}
+                    updateField={updateField}
                   />
+
                   <Field
                     id="phone"
                     label="Phone Number"
                     placeholder="Enter your phone number"
                     icon={Phone}
+                    form={form}
+                    errors={errors}
+                    updateField={updateField}
                   />
+
+                  {/* PASSWORD */}
                   <div className="space-y-2">
                     <label
                       htmlFor="password"
@@ -363,8 +452,10 @@ export default function SignUp() {
                     >
                       Password
                     </label>
+
                     <div className="relative">
                       <Lock className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-slate-400" />
+
                       <input
                         id="password"
                         name="password"
@@ -379,9 +470,12 @@ export default function SignUp() {
                             : "border-slate-200"
                         }`}
                       />
+
                       <button
                         type="button"
-                        onClick={() => setShowPassword((current) => !current)}
+                        onClick={() =>
+                          setShowPassword((current) => !current)
+                        }
                         aria-label={
                           showPassword ? "Hide password" : "Show password"
                         }
@@ -394,15 +488,19 @@ export default function SignUp() {
                         )}
                       </button>
                     </div>
+
                     <p className="text-xs text-slate-400">
                       Minimum 8 characters
                     </p>
+
                     {errors.password && (
                       <p className="text-xs font-medium text-red-500">
                         {errors.password}
                       </p>
                     )}
                   </div>
+
+                  {/* CONFIRM PASSWORD */}
                   <div className="space-y-2">
                     <label
                       htmlFor="confirmPassword"
@@ -410,12 +508,16 @@ export default function SignUp() {
                     >
                       Confirm Password
                     </label>
+
                     <div className="relative">
                       <Lock className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-slate-400" />
+
                       <input
                         id="confirmPassword"
                         name="confirmPassword"
-                        type={showConfirmPassword ? "text" : "password"}
+                        type={
+                          showConfirmPassword ? "text" : "password"
+                        }
                         value={form.confirmPassword}
                         onChange={updateField}
                         placeholder="Re-enter your password"
@@ -426,6 +528,7 @@ export default function SignUp() {
                             : "border-slate-200"
                         }`}
                       />
+
                       <button
                         type="button"
                         onClick={() =>
@@ -445,6 +548,7 @@ export default function SignUp() {
                         )}
                       </button>
                     </div>
+
                     {errors.confirmPassword && (
                       <p className="text-xs font-medium text-red-500">
                         {errors.confirmPassword}
@@ -453,28 +557,41 @@ export default function SignUp() {
                   </div>
                 </div>
 
+                {/* LOCATION */}
                 <div className="border-t border-slate-100 pt-6">
                   <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-700">
                     Location
                   </h2>
+
                   <div className="grid gap-5 sm:grid-cols-2">
+
                     <Field
                       id="city"
                       label="City"
                       placeholder="Enter your city"
                       icon={MapPin}
+                      form={form}
+                      errors={errors}
+                      updateField={updateField}
                     />
+
                     <Field
                       id="area"
                       label="Location / Area"
                       placeholder="Enter your area or locality"
                       icon={MapPin}
+                      form={form}
+                      errors={errors}
+                      updateField={updateField}
                     />
+
                   </div>
                 </div>
 
+                {/* PROFILE PICTURE */}
                 <div className="flex items-center gap-4">
                   <div className="relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-emerald-200 bg-emerald-50 text-emerald-500">
+
                     {profilePreview ? (
                       <img
                         src={profilePreview}
@@ -484,13 +601,17 @@ export default function SignUp() {
                     ) : (
                       <User className="size-8" />
                     )}
+
                     <label
                       htmlFor="profilePicture"
                       className="absolute bottom-0 right-0 flex size-7 cursor-pointer items-center justify-center rounded-full bg-emerald-600 text-white shadow-md transition hover:bg-emerald-700"
                     >
                       <Camera className="size-4" />
-                      <span className="sr-only">Change profile picture</span>
+                      <span className="sr-only">
+                        Change profile picture
+                      </span>
                     </label>
+
                     <input
                       id="profilePicture"
                       type="file"
@@ -499,6 +620,7 @@ export default function SignUp() {
                       className="sr-only"
                     />
                   </div>
+
                   <div>
                     <h2 className="text-sm font-bold text-slate-700">
                       Profile Picture{" "}
@@ -506,17 +628,20 @@ export default function SignUp() {
                         Optional
                       </span>
                     </h2>
+
                     <p className="mt-1 text-xs text-slate-400">
                       Add a photo to personalize your profile.
                     </p>
                   </div>
                 </div>
 
+                {/* ROLE SELECTION */}
                 <div className="space-y-3">
                   <div>
                     <h2 className="text-sm font-bold text-slate-700">
                       Select Your Role
                     </h2>
+
                     <p className="mt-1 text-xs text-slate-500">
                       Choose how you will participate in GreenVision AI.
                     </p>
@@ -545,6 +670,7 @@ export default function SignUp() {
                           type="button"
                           onClick={() => {
                             setRole(id);
+
                             setErrors((current) => ({
                               ...current,
                               role: "",
@@ -563,14 +689,19 @@ export default function SignUp() {
                               <Check className="size-3" />
                             </span>
                           )}
+
                           <Icon
                             className={`mb-3 size-6 ${
-                              selected ? "text-emerald-600" : "text-slate-400"
+                              selected
+                                ? "text-emerald-600"
+                                : "text-slate-400"
                             }`}
                           />
+
                           <h3 className="text-sm font-bold text-slate-800">
                             {title}
                           </h3>
+
                           <p className="mt-1 text-xs leading-5 text-slate-500">
                             {text}
                           </p>
@@ -586,6 +717,7 @@ export default function SignUp() {
                   )}
                 </div>
 
+                {/* GOVERNMENT ACCESS CODE */}
                 {role === "government" && (
                   <div className="space-y-2">
                     <label
@@ -594,8 +726,10 @@ export default function SignUp() {
                     >
                       Government Access Code
                     </label>
+
                     <div className="relative">
                       <ShieldCheck className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-slate-400" />
+
                       <input
                         id="accessCode"
                         name="accessCode"
@@ -610,10 +744,12 @@ export default function SignUp() {
                         }`}
                       />
                     </div>
+
                     <p className="text-xs text-slate-400">
                       A valid authorization code is required for government
                       accounts.
                     </p>
+
                     {errors.accessCode && (
                       <p className="text-xs font-medium text-red-500">
                         {errors.accessCode}
@@ -622,6 +758,14 @@ export default function SignUp() {
                   </div>
                 )}
 
+                {/* API ERROR */}
+                {errors.submit && (
+                  <p className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-600">
+                    {errors.submit}
+                  </p>
+                )}
+
+                {/* SUBMIT BUTTON */}
                 <button
                   type="submit"
                   disabled={loading}
@@ -640,39 +784,47 @@ export default function SignUp() {
                   )}
                 </button>
 
-                {submitted && Object.keys(errors).length === 0 && !loading && (
+                {submitted && (
                   <p className="text-center text-sm font-medium text-emerald-600">
                     Your account is ready to be created.
                   </p>
                 )}
 
+                {/* DIVIDER */}
                 <div className="flex items-center gap-4">
                   <div className="h-px flex-1 bg-slate-200" />
+
                   <span className="text-xs font-semibold text-slate-400">
                     OR
                   </span>
+
                   <div className="h-px flex-1 bg-slate-200" />
                 </div>
 
+                {/* SOCIAL LOGIN */}
                 <div className="grid gap-3 sm:grid-cols-2">
                   <button
                     type="button"
                     className="flex h-12 items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                   >
-                    <span className="text-base font-bold text-red-500">G</span>
+                    <span className="text-base font-bold text-red-500">
+                      G
+                    </span>
                     Continue with Google
                   </button>
+
                   <button
                     type="button"
                     className="flex h-12 items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                   >
-                    {/* <Facebook className="size-5 fill-blue-600 text-blue-600" /> */}
                     Continue with Facebook
                   </button>
                 </div>
 
+                {/* LOGIN LINK */}
                 <p className="text-center text-sm text-slate-500">
                   Already have an account?{" "}
+
                   <a
                     href="/login"
                     className="font-bold text-emerald-600 transition hover:text-emerald-700"
@@ -680,6 +832,7 @@ export default function SignUp() {
                     Login
                   </a>
                 </p>
+
               </form>
             </div>
           </div>
