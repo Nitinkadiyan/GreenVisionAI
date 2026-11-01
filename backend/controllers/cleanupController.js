@@ -121,7 +121,7 @@ const getCleanupTaskById = async (req, res) => {
         success: false,
         message: "Cleanup task not found",
       });
-    }  
+    }
     return res.status(200).json({
       success: true,
       cleanupTask,
@@ -219,6 +219,22 @@ const acceptCleanupTask = async (req, res) => {
     // Get the currently logged-in citizen
     const userId = req.user.id;
 
+    // Find the report associated with this cleanup task
+    const report = await Report.findById(cleanupTask.report);
+
+    if (!report) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Associated report not found" });
+    }
+
+    // Prevent users from volunteering for their own reports
+    if (userId.toString() === report.userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You cannot volunteer for a report you created.",
+      });
+    }
     // Assign the task to that user
     cleanupTask.volunteer = userId;
 
@@ -357,7 +373,7 @@ const submitCleanupCompletion = async (req, res) => {
     };
 
     // 9. Save AI result
-     const aiVerification = {
+    const aiVerification = {
       verified: aiResult.verified,
       confidence: aiResult.confidence,
       cleanupQuality: aiResult.cleanupQuality,

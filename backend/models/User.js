@@ -15,6 +15,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  isPhoneVerified: {
+    type: Boolean,
+    default: false,
+  },
   location: {
     city: {
       type: String,

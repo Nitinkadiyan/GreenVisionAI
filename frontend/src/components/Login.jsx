@@ -2,6 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { motion } from "motion/react";
 import GoogleLogin from "./googleLogin";
+import MobileOtpLogin from "./MobileOtpLogin";
 import {
   Leaf,
   Mail,
@@ -17,6 +18,7 @@ import {
   User,
   Landmark,
   HeartHandshake,
+  Smartphone
 } from "lucide-react";
 import Navbar from "./Navbar";
 import { useLocation } from "react-router-dom";
@@ -77,9 +79,34 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
+  const [showMobileLogin, setShowMobileLogin] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const handleGoogleSuccess = (data) => {
+  const token = data.token;
+if (showMobileLogin) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background p-6">
+      <div className="glass-card w-full max-w-md rounded-2xl p-7 shadow-soft sm:p-9">
+        <MobileOtpLogin
+          onLoginSuccess={(user, token) => {
+            localStorage.setItem("token", token);
+            localStorage.setItem("user", JSON.stringify(user));
+
+            if (user.role === "government") {
+              navigate("/government-dashboard");
+            } else {
+              navigate("/user-home-page");
+            }
+          }}
+          onBack={() => setShowMobileLogin(false)}
+        />
+      </div>
+    </div>
+  );
+}
+
+const handleGoogleSuccess = (data) => {
   const token = data.token;
 
   if (!token) {
@@ -92,6 +119,7 @@ export default function Login() {
   // Google-created accounts are citizens in our current backend setup.
   navigate("/user-home-page");
 };
+  }
 
   const validate = () => {
     const next = {};
@@ -392,12 +420,13 @@ export default function Login() {
                 {/* Google */}
               {/* </button> */}
               <button
-                type="button"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.02] hover:border-primary/30"
-              >
-                {/* <Github className="h-4 w-4" /> */}
-                GitHub
-              </button>
+  type="button"
+  onClick={() => setShowMobileLogin(true)}
+  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.02] hover:border-primary/30"
+>
+  <Smartphone className="h-4 w-4" />
+  Mobile OTP
+</button>
             </div>
 
             <p className="mt-7 text-center text-sm text-muted-foreground">
