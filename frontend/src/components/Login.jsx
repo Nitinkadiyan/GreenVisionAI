@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { motion } from "motion/react";
+import GoogleLogin from "./googleLogin";
 import {
   Leaf,
   Mail,
@@ -78,7 +79,19 @@ export default function Login() {
   const [formError, setFormError] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
-  
+  const handleGoogleSuccess = (data) => {
+  const token = data.token;
+
+  if (!token) {
+    setFormError("Google login failed: authentication token not received.");
+    return;
+  }
+
+  localStorage.setItem("token", token);
+
+  // Google-created accounts are citizens in our current backend setup.
+  navigate("/user-home-page");
+};
 
   const validate = () => {
     const next = {};
@@ -370,13 +383,14 @@ export default function Login() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <button
+              {/* <button
                 type="button"
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.02] hover:border-primary/30"
-              >
+              > */}
+                <GoogleLogin onSuccess={handleGoogleSuccess} />
                 {/* <GoogleIcon className="h-4 w-4" /> */}
-                Google
-              </button>
+                {/* Google */}
+              {/* </button> */}
               <button
                 type="button"
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.02] hover:border-primary/30"

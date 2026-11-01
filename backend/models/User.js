@@ -13,18 +13,15 @@ const userSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: true,
     trim: true,
   },
   location: {
     city: {
       type: String,
-      required: true,
       trim: true,
     },
     area: {
       type: String,
-      required: true,
       trim: true,
     },
     address: {
@@ -48,11 +45,15 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
+    required: function () {
+      return this.authProvider === "local";
+    },
   },
   confirmPassword: {
     type: String,
-    required: true,
+    required: function () {
+      return this.authProvider === "local";
+    },
   },
   createdAt: {
     type: Date,
@@ -61,19 +62,6 @@ const userSchema = new mongoose.Schema({
   accessCode: {
     type: String,
     trim: true,
-  },
-  isVerified: {
-    type: Boolean,
-    default: false,
-  },
-  resetVerified: {
-    type: Boolean,
-    default: false,
-  },
-  role: {
-    type: String,
-    enum: ["Government", "User", "Admin"],
-    default: "User",
   },
   otp: {
     type: String,
@@ -84,18 +72,7 @@ const userSchema = new mongoose.Schema({
   // {
   //   timestamps: true,
   // },
-  confirmPassword: {
-    type: String,
-    required: true,
-  },
-  createdAt: {
-    type: Date,
-    default: new Date(),
-  },
-  accessCode: {
-    type: String,
-    trim: true,
-  },
+
   isVerified: {
     type: Boolean,
     default: false,
@@ -109,17 +86,34 @@ const userSchema = new mongoose.Schema({
     enum: ["government", "citizen"],
     default: "citizen",
   },
+  authProvider: {
+    type: String,
+    enum: ["local", "google", "facebook"],
+    default: "local",
+  },
+
+  googleId: {
+    type: String,
+    sparse: true,
+    unique: true,
+  },
+
+  facebookId: {
+    type: String,
+    sparse: true,
+    unique: true,
+  },
   // otp: String,
   // otpExpiry: Date,
 });
 userSchema.pre("save", async function () {
-  console.log("Pre-save hook running");
-  console.log("Before:", this.password);
+  // console.log("Pre-save hook running");
+  // console.log("Before:", this.password);
 
   if (!this.isModified("password")) return;
 
   this.password = await bcrypt.hash(this.password, 12);
 
-  console.log("After:", this.password);
+  // console.log("After:", this.password);
 });
 module.exports = mongoose.model("User", userSchema);
