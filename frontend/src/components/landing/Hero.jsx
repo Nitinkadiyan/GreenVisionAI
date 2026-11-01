@@ -1,6 +1,8 @@
 import { motion } from "motion/react";
-import { ArrowRight, Sparkles, Users } from "lucide-react";
+import { ArrowRight, LogIn, Sparkles, Users } from "lucide-react";
 import heroImg from "../../assets/heroLanding.png";
+import { Navigate } from "react-router-dom";
+import Login from "../Login";
 import { useNavigate } from "react-router-dom";
 
 export default function Hero() {

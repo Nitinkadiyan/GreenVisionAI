@@ -95,6 +95,7 @@ export default function SignUp() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     console.log("function called");
+    alert(`Signup successfull! Welcome ${form.name}`);
     setSubmitted(true);
 
     

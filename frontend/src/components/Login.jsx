@@ -121,6 +121,8 @@ export default function Login() {
         navigate("/user-home-page");
       }
     } catch (error) {
+      alert("User not found! Please signup to create a new account.")
+      navigate("/signup");
       console.log("login failed");
       console.log(error.message);
     } finally {
@@ -386,12 +388,13 @@ export default function Login() {
 
             <p className="mt-7 text-center text-sm text-muted-foreground">
               Don&apos;t have an account?{" "}
-              <a
-                href="/signup"
+              <button
+                // href="#create-account"
+                onClick={()=>navigate("/signup")}
                 className="font-semibold text-primary transition-opacity duration-200 hover:opacity-75"
               >
                 Create Account
-              </a>
+              </button>
             </p>
           </div>
         </motion.section>
