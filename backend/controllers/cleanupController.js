@@ -301,7 +301,8 @@ const startCleanupTask = async (req, res) => {
 const submitCleanupCompletion = async (req, res) => {
   try {
     const { id } = req.params;
-    const { description } = req.body;
+    const { description, latitude, longitude } = req.body;
+    const afterImage = req.files?.afterImage?.[0];
     const cleanupTask = await CleanupTask.findById(id);
     if (!cleanupTask) {
       return res.status(404).json({
@@ -331,7 +332,7 @@ const submitCleanupCompletion = async (req, res) => {
       });
     }
     const beforeImage = req.files?.beforeImage?.[0];
-    const afterImage = req.files?.afterImage?.[0];
+    // const afterImage = req.files?.afterImage?.[0];
 
     if (!beforeImage || !afterImage) {
       return res.status(400).json({
