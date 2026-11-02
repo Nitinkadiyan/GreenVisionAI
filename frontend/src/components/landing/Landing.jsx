@@ -6,9 +6,9 @@ import Stats from "./Stats.jsx";
 import Reveal from "./Reveal.jsx";
 import Impact from "./Impact.jsx";
 import HowItWorks from "./HowItWorks.jsx";
-import community from "./community.jsx";
 import Navbar from "../Navbar.jsx";
 import Testimonials from "./Testimonials.jsx";
+import Community from  "./community.jsx";  
 
 export default function Landing() {
   return (
@@ -22,7 +22,7 @@ export default function Landing() {
       <CallToAction />
       <Reveal />
       <Testimonials />
-      <community />
+      <Community />
       <Footer />
     </>
   );
