@@ -2,14 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import Navbar from "./components/Navbar.jsx";
 import Home from "./components/landing/Landing.jsx";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Signup from "./components/Signup.jsx";
 import Login from "./components/Login.jsx";
-import VerifyAccount from "./components/home/VerifyAccount.jsx";
-import UserDashboard from "./components/home/Dashboard.jsx";
-import ReportIssue from "./components/home/ReportIssue.jsx";
+import Signup from "./components/Signup.jsx";
+import VerifyAccount from "./components/UserHomePage/verifyAccount.jsx";
+import UserDashboard from "./components/UserHomePage/UserDashBoard/Dashboard.jsx";
 import GovernmentDashboard from "./components/govtDashboard/governmentDashboard.jsx";
-import ReportSection from "./components/govtDashboard/ReportSection.jsx";
-import CreateReport from "./components/home/MyReports.jsx";
+import ReportIssue from "./components/UserHomePage/ReportIssue.jsx";
+import ReportSection from "./components/UserHomePage/MyReports.jsx";
+import CreateReport from "./components/UserHomePage/MyReports.jsx";
 export default function App() {
   return (
     <Routes>

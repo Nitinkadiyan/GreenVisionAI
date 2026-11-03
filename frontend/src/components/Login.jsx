@@ -94,7 +94,7 @@ if (showMobileLogin) {
             localStorage.setItem("user", JSON.stringify(user));
 
             if (user.role === "government") {
-              navigate("/government-dashboard");
+              navigate("/government-page");
             } else {
               navigate("/user-home-page");
             }

@@ -4,14 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 // import Landing from './components/landing/Landing';
 import "leaflet/dist/leaflet.css";
-import UserDashboard from "./components/home/Dashboard.jsx";
-import Navbar from "./components/Navbar.jsx";
-import Signup from "./components/Signup.jsx";
-import Login from "./components/Login.jsx";
-import VerifyAccount from "./components/home/VerifyAccount.jsx";
-import Dashboard from "./components/home/Dashboard.jsx";
-import CreateReport from "./components/home/MyReports.jsx";
-import GovernmentDashboard from "./components/govtDashboard/govtDashBoard.jsx";
+
 import App from "./App.jsx";
 createRoot(document.getElementById("root")).render(
   <StrictMode>
