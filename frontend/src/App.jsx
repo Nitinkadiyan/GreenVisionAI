@@ -7,7 +7,6 @@ import Signup from "./components/Signup.jsx";
 import VerifyAccount from "./components/UserHomePage/verifyAccount.jsx";
 import UserDashboard from "./components/UserHomePage/UserDashBoard/Dashboard.jsx";
 import GovernmentDashboard from "./components/govtDashboard/governmentDashboard.jsx";
-import GovtDashboard from "./components/govtDashboard/govtDashBoard.jsx";
 import ReportIssue from "./components/UserHomePage/ReportIssue.jsx";
 import ReportSection from "./components/UserHomePage/MyReports.jsx";
 import CreateReport from "./components/UserHomePage/MyReports.jsx";
