@@ -23,6 +23,9 @@ const Signup = async (req, res) => {
       role,
       accessCode,
     } = req.body;
+    console.log("========== SIGNUP DEBUG ==========");
+    console.log("Received role:", role);
+    console.log("Received body:", req.body);
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res
@@ -73,6 +76,7 @@ const Signup = async (req, res) => {
       role,
       profilePicture: profilePicture,
     });
+    console.log("Role stored in MongoDB:", user.role);
 
     const html = otpTemplate(user.name, otp);
 
@@ -80,6 +84,7 @@ const Signup = async (req, res) => {
 
     const token = createSecretToken(user._id, user.role);
 
+    console.log("Role stored in MongoDB:", user.role);
     return res.status(201).json({
       message: "User signed in successfully",
       success: true,
