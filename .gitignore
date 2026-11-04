@@ -16,3 +16,7 @@ Thumbs.db
 
 # VS Code (optional)
 .vscode/
+
+# Runtime uploaded files
+backend/uploads/*
+!backend/uploads/.gitkeep

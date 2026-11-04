@@ -21,7 +21,7 @@ const cleanupTaskSchema = new mongoose.Schema(
     },
     deadline: {
       type: Date,
-      require: true,
+      required: true,
     },
     status: {
       type: String,
@@ -47,6 +47,7 @@ const cleanupTaskSchema = new mongoose.Schema(
       },
       beforeImagePublicId: {
         type: String,
+        default: null,
       },
       afterImageUrl: {
         type: String,
@@ -54,49 +55,26 @@ const cleanupTaskSchema = new mongoose.Schema(
       },
       afterImagePublicId: {
         type: String,
+        default: null,
       },
       description: {
         type: String,
+        default: null,
+      },
+      latitude: {
+        type: Number,
+        default: null,
+      },
+      longitude: {
+        type: Number,
         default: null,
       },
       submittedAt: {
         type: Date,
         default: null,
       },
-      aiVerification: {
-        verified: {
-          type: String,
-        },
-        confidence: {
-          type: String,
-        },
-        cleanupQuality: {
-          type: String,
-        },
-        sameLocation: {
-          type: String,
-        },
-        wasteReduced: {
-          type: String,
-        },
-        remainingWaste: {
-          type: String,
-        },
-        evidenceMatchesDescription: {
-          type: String,
-        },
-        summary: {
-          type: String,
-        },
-        recommendation: {
-          type: String,
-        },
-        verifiedAt: {
-          type: Date,
-        },
-      },
     },
-  },     
+  },
   {
     timestamps: true,
   },

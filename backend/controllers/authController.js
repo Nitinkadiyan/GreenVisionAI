@@ -4,6 +4,8 @@ const bcrypt = require("bcrypt");
 const otpTemplate = require("../templates/otpTemplate");
 const sendEmail = require("../utils/sendEmail.js");
 const cloudinary = require("../utils/cloudinary.js");
+const { OAuth2Client } = require("google-auth-library");
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const dotenv = require("dotenv");
 require("dotenv").config();
 const Signup = async (req, res) => {
@@ -21,6 +23,9 @@ const Signup = async (req, res) => {
       role,
       accessCode,
     } = req.body;
+    console.log("========== SIGNUP DEBUG ==========");
+    console.log("Received role:", role);
+    console.log("Received body:", req.body);
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res
@@ -45,7 +50,7 @@ const Signup = async (req, res) => {
         });
       }
     }
-    let profilePicture=null;
+    let profilePicture = null;
     if (req.file) {
       const result = await cloudinary.uploader.upload(req.file.path);
       profilePicture = {
@@ -69,8 +74,9 @@ const Signup = async (req, res) => {
       isVerified: false,
       createdAt,
       role,
-      profilePicture:profilePicture,
+      profilePicture: profilePicture,
     });
+    console.log("Role stored in MongoDB:", user.role);
 
     const html = otpTemplate(user.name, otp);
 
@@ -78,6 +84,7 @@ const Signup = async (req, res) => {
 
     const token = createSecretToken(user._id, user.role);
 
+    console.log("Role stored in MongoDB:", user.role);
     return res.status(201).json({
       message: "User signed in successfully",
       success: true,
@@ -103,7 +110,7 @@ const Login = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "user Not Found",
+        message: "User Not Found",
       });
     }
     console.log(user.password);
@@ -324,9 +331,9 @@ const updateUser = async (req, res) => {
       });
     }
     const { name, email, city, phone } = req.body;
-    user.name =name;
-    user.email =email;
-    user.phone =phone;
+    user.name = name;
+    user.email = email;
+    user.phone = phone;
     user.location.city = city;
     await user.save();
     const updatedUser = await User.findById(req.user.id).select(
@@ -371,6 +378,220 @@ const deleteUser = async (req, res) => {
     });
   }
 };
+const GoogleAuth = async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({
+        success: false,
+        message: "Google credential is required",
+      });
+    }
+
+    // Verify the Google ID token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const { sub: googleId, email, email_verified, name, picture } = payload;
+
+    if (!email || !email_verified) {
+      return res.status(401).json({
+        success: false,
+        message: "A verified Google email is required",
+      });
+    }
+
+    // Find an account already linked to this Google ID
+    let user = await User.findOne({ googleId });
+
+    if (!user) {
+      // Do not automatically link an existing local account
+      const existingUser = await User.findOne({ email });
+
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message:
+            "An account with this email already exists. Please log in using your existing method.",
+        });
+      }
+
+      // Create a new citizen account
+      user = await User.create({
+        name,
+        email,
+        googleId,
+        authProvider: "google",
+        role: "citizen",
+        isVerified: true,
+        profilePicture: {
+          url: picture || "",
+          publicId: "",
+        },
+      });
+    }
+
+    // Issue GreenVision's own JWT
+    const token = createSecretToken(user._id, user.role);
+
+    // Remove sensitive fields from the returned user
+    const safeUser = await User.findById(user._id).select(
+      "-password -confirmPassword -otp -otpExpiry -accessCode",
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Google authentication successful",
+      user: safeUser,
+      token,
+    });
+  } catch (error) {
+    console.error("Google authentication error:", error.message);
+
+    return res.status(401).json({
+      success: false,
+      message: "Google authentication failed",
+    });
+  }
+};
+const sendMobileOtp = async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number is required",
+      });
+    }
+
+    // Find an existing account with this phone number
+    const user = await User.findOne({ phone });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "No account found with this phone number",
+      });
+    }
+
+    // Only allow login with a previously verified phone number
+    if (!user.isPhoneVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "Phone number is not verified",
+      });
+    }
+
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store OTP and expiry
+    user.otp = otp;
+    user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+    await user.save();
+
+    // Development only: display OTP in the backend terminal
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`Mobile OTP for ${phone}: ${otp}`);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP generated successfully",
+    });
+  } catch (error) {
+    console.error("Send mobile OTP error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to generate OTP",
+    });
+  }
+};
+const verifyMobileOtp = async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+
+    if (!phone || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number and OTP are required",
+      });
+    }
+
+    // Find the user using their phone number
+    const user = await User.findOne({ phone });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Account not found",
+      });
+    }
+
+    // Check whether the phone number is verified
+    if (!user.isPhoneVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "Phone number is not verified",
+      });
+    }
+
+    // Check OTP
+    if (!user.otp || user.otp !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    // Check OTP expiry
+    if (!user.otpExpiry || user.otpExpiry < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired. Please request a new one.",
+      });
+    }
+
+    // Clear OTP after successful verification
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+    await user.save();
+
+    // Generate the existing authentication token
+    const token = createSecretToken(user._id, user.role);
+
+    // Return safe user information
+    return res.status(200).json({
+      success: true,
+      message: "Mobile login successful",
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        profilePicture: user.profilePicture,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error("Verify mobile OTP error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to verify OTP",
+    });
+  }
+};
 module.exports = {
   Signup,
   Login,
@@ -381,4 +602,7 @@ module.exports = {
   verifyOtp,
   getUser,
   updateUser,
+  GoogleAuth,
+  sendMobileOtp,
+  verifyMobileOtp,
 };

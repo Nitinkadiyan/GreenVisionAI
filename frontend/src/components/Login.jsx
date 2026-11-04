@@ -1,6 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
 import { motion } from "motion/react";
+import GoogleLogin from "./googleLogin";
+import MobileOtpLogin from "./MobileOtpLogin";
 import {
   Leaf,
   Mail,
@@ -16,6 +18,7 @@ import {
   User,
   Landmark,
   HeartHandshake,
+  Smartphone
 } from "lucide-react";
 import Navbar from "./Navbar";
 import { useLocation } from "react-router-dom";
@@ -76,9 +79,47 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
+  const [showMobileLogin, setShowMobileLogin] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  
+  const handleGoogleSuccess = (data) => {
+  const token = data.token;
+if (showMobileLogin) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background p-6">
+      <div className="glass-card w-full max-w-md rounded-2xl p-7 shadow-soft sm:p-9">
+        <MobileOtpLogin
+          onLoginSuccess={(user, token) => {
+            localStorage.setItem("token", token);
+            localStorage.setItem("user", JSON.stringify(user));
+
+            if (user.role === "government") {
+              navigate("/government-page");
+            } else {
+              navigate("/user-home-page");
+            }
+          }}
+          onBack={() => setShowMobileLogin(false)}
+        />
+      </div>
+    </div>
+  );
+}
+
+const handleGoogleSuccess = (data) => {
+  const token = data.token;
+
+  if (!token) {
+    setFormError("Google login failed: authentication token not received.");
+    return;
+  }
+
+  localStorage.setItem("token", token);
+
+  // Google-created accounts are citizens in our current backend setup.
+  navigate("/user-home-page");
+};
+  }
 
   const validate = () => {
     const next = {};
@@ -121,6 +162,8 @@ export default function Login() {
         navigate("/user-home-page");
       }
     } catch (error) {
+      alert("User not found! Please signup to create a new account.")
+      navigate("/signup");
       console.log("login failed");
       console.log(error.message);
     } finally {
@@ -368,30 +411,33 @@ export default function Login() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <button
+              {/* <button
                 type="button"
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.02] hover:border-primary/30"
-              >
+              > */}
+                <GoogleLogin onSuccess={handleGoogleSuccess} />
                 {/* <GoogleIcon className="h-4 w-4" /> */}
-                Google
-              </button>
+                {/* Google */}
+              {/* </button> */}
               <button
-                type="button"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.02] hover:border-primary/30"
-              >
-                {/* <Github className="h-4 w-4" /> */}
-                GitHub
-              </button>
+  type="button"
+  onClick={() => setShowMobileLogin(true)}
+  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.02] hover:border-primary/30"
+>
+  <Smartphone className="h-4 w-4" />
+  Mobile OTP
+</button>
             </div>
 
             <p className="mt-7 text-center text-sm text-muted-foreground">
               Don&apos;t have an account?{" "}
-              <a
-                href="/signup"
+              <button
+                // href="#create-account"
+                onClick={()=>navigate("/signup")}
                 className="font-semibold text-primary transition-opacity duration-200 hover:opacity-75"
               >
                 Create Account
-              </a>
+              </button>
             </p>
           </div>
         </motion.section>
