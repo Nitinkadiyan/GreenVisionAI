@@ -1,36 +1,50 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/User.js");
 
 const verifyToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    console.log("auth header is : ", authHeader);
-    if (!authHeader) {
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: "token not found",
+        message: "Authorization token missing or invalid",
       });
     }
+
     const token = authHeader.split(" ")[1];
-    // const token = req.cookies.token;
-    if (!token) {
+
+    const decoded = jwt.verify(token, process.env.TOKEN_KEY_SECRET);
+
+    // Fetch the latest user information from MongoDB
+    const user = await User.findById(decoded.id).select(
+      "-password -confirmPassword",
+    );
+
+    if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Token not found",
+        message: "User not found",
       });
     }
-    const decoded = jwt.verify(token, process.env.TOKEN_KEY_SECRET);
+
+    // Always use the current database role
     req.user = {
-      id: decoded.id,
-      role: decoded.role,
+      id: user._id,
+      role: user.role,
     };
-    console.log("req.user : ", req.user);
+
+    console.log("Authenticated user:", req.user);
+
     next();
   } catch (err) {
-    console.log("jwt error", err);
+    console.error("JWT verification error:", err.message);
+
     return res.status(401).json({
       success: false,
       message: err.message,
     });
   }
 };
+
 module.exports = { verifyToken };

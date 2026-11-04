@@ -219,6 +219,22 @@ const acceptCleanupTask = async (req, res) => {
     // Get the currently logged-in citizen
     const userId = req.user.id;
 
+    // Find the report associated with this cleanup task
+    const report = await Report.findById(cleanupTask.report);
+
+    if (!report) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Associated report not found" });
+    }
+
+    // Prevent users from volunteering for their own reports
+    if (userId.toString() === report.userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You cannot volunteer for a report you created.",
+      });
+    }
     // Assign the task to that user
     cleanupTask.volunteer = userId;
 
@@ -285,7 +301,8 @@ const startCleanupTask = async (req, res) => {
 const submitCleanupCompletion = async (req, res) => {
   try {
     const { id } = req.params;
-    const { description } = req.body;
+    const { description, latitude, longitude } = req.body;
+    const afterImage = req.files?.afterImage?.[0];
     const cleanupTask = await CleanupTask.findById(id);
     if (!cleanupTask) {
       return res.status(404).json({
@@ -315,7 +332,7 @@ const submitCleanupCompletion = async (req, res) => {
       });
     }
     const beforeImage = req.files?.beforeImage?.[0];
-    const afterImage = req.files?.afterImage?.[0];
+    // const afterImage = req.files?.afterImage?.[0];
 
     if (!beforeImage || !afterImage) {
       return res.status(400).json({
@@ -357,7 +374,7 @@ const submitCleanupCompletion = async (req, res) => {
     };
 
     // 9. Save AI result
-     const aiVerification = {
+    const aiVerification = {
       verified: aiResult.verified,
       confidence: aiResult.confidence,
       cleanupQuality: aiResult.cleanupQuality,
