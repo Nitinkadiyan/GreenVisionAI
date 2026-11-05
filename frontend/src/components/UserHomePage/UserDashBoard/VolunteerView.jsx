@@ -141,7 +141,7 @@ export default function VolunteerView() {
               </div>
             </div>
             <div className="mt-5 flex gap-3">
-              {task.status === "available" && (
+              {task.status === "Available" && (
                 <button
                   onClick={() => acceptTask(task._id)}
                   className="flex-1 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700"
