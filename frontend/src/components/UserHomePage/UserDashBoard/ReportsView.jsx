@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Filter, Search } from "lucide-react";
 
@@ -14,36 +14,38 @@ export default function ReportsView({
   reports = [],
   reportsLoading,
   reportsError,
+  initialFilter = "All",
 }) {
-  const [filter, setFilter] = useState("All");
-
+  const [filter, setFilter] = useState(initialFilter);
   const navigate = useNavigate();
 
-  // Filter and search reports received from Dashboard
-  const list = reports.filter((r) => {
-    const statusMatch =
-      filter === "All" || r.status?.includes(filter);
+  // Update the dropdown when a dashboard card is clicked.
+  useEffect(() => {
+    setFilter(initialFilter);
+  }, [initialFilter]);
 
-    const searchText =
-      ` ${r.title || ""} 
-        ${r.description || ""} 
-        ${r.location?.address || ""} 
-        ${r.aiAnalysis?.wasteType || ""} `
-        .toLowerCase();
+  const list = reports.filter((report) => {
+    const statusMatch =
+      filter === "All" || report.status === filter;
+
+    const searchText = `
+      ${report.title || ""}
+      ${report.description || ""}
+      ${report.location?.address || ""}
+      ${report.aiAnalysis?.wasteType || ""}
+    `.toLowerCase();
 
     const searchMatch = searchText.includes(
-      (query || "").toLowerCase()
+      (query || "").trim().toLowerCase()
     );
 
     return statusMatch && searchMatch;
   });
 
-  // Loading state comes from Dashboard
   if (reportsLoading) {
     return <div className="p-8">Loading reports...</div>;
   }
 
-  // Error state comes from Dashboard
   if (reportsError) {
     return (
       <div className="p-8 text-red-500">
@@ -62,7 +64,6 @@ export default function ReportsView({
       />
 
       <div className="mb-5 flex flex-wrap gap-2">
-
         {/* Status Filter */}
         <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-500">
           <Filter size={15} />
@@ -81,6 +82,13 @@ export default function ReportsView({
               Assigned Cleanup
             </option>
             <option value="In Progress">In Progress</option>
+            <option value="Completion Submitted">
+              Completion Submitted
+            </option>
+            <option value="Government Review">
+              Government Review
+            </option>
+            <option value="Completed">Completed</option>
             <option value="Resolved">Resolved</option>
             <option value="Rejected by Government">
               Rejected by Government
@@ -93,7 +101,7 @@ export default function ReportsView({
           <Search size={15} />
 
           <input
-            value={query}
+            value={query || ""}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search reports..."
             className="w-36 outline-none"
@@ -104,19 +112,19 @@ export default function ReportsView({
       {/* Reports List */}
       <div className="space-y-4">
         {list.length > 0 ? (
-          list.map((r) => (
+          list.map((report) => (
             <ReportCard
-              key={r._id}
-              report={r}
+              key={report._id}
+              report={report}
               onClick={() => {
-                setSelectedReport(r);
+                setSelectedReport(report);
                 setView("reportDetail");
               }}
             />
           ))
         ) : (
           <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500">
-            No reports found.
+            No reports found for this filter.
           </div>
         )}
       </div>

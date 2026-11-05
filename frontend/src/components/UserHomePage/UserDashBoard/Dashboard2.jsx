@@ -18,77 +18,89 @@ export default function Dashboard2({
   query,
   reports = [],
   setSelectedReport,
+  setReportFilter,
+  user,
 }) {
   const navigate = useNavigate();
 
-  // Filter reports using the search query
+  // Search reports
   const filtered = reports.filter((report) =>
-    `${report.title || ""} ${report.category || ""} ${report.location?.address || report.location || ""}`
+    `${report.title || ""} ${report.category || ""} ${
+      report.location?.address || report.location || ""
+    }`
       .toLowerCase()
-      .includes((query || "").toLowerCase()),
+      .includes((query || "").toLowerCase())
   );
 
-  // Dashboard statistics
+  // Report statistics
   const pendingReports = reports.filter(
-    (report) => report.status === "Pending Review",
+    (report) => report.status === "Pending Review"
   ).length;
 
   const progressReports = reports.filter(
-    (report) => report.status === "In Progress",
+    (report) => report.status === "In Progress"
   ).length;
 
   const completedReports = reports.filter(
     (report) =>
-      report.status === "Completed" || report.status === "Resolved",
+      report.status === "Completed" ||
+      report.status === "Resolved"
   ).length;
 
   const stats = [
-    [
-      "My Reports",
-      reports.length,
-      "Total submitted",
-      FileText,
-      "bg-emerald-50 text-emerald-700",
-    ],
-    [
-      "Pending Reports",
-      pendingReports,
-      "Awaiting government review",
-      Clock3,
-      "bg-amber-50 text-amber-700",
-    ],
-    [
-      "Active Volunteer Tasks",
-      progressReports,
-      "Currently in progress",
-      Activity,
-      "bg-sky-50 text-sky-700",
-    ],
-    [
-      "Completed Tasks",
-      completedReports,
-      "Successfully completed",
-      CheckCircle2,
-      "bg-violet-50 text-violet-700",
-    ],
-    [
-      "Total Rewards",
-      "₹2,450",
-      "Total earned",
-      Gift,
-      "bg-orange-50 text-orange-700",
-    ],
-    [
-      "My Stars",
-      "1,240",
-      "Community contribution score",
-      Star,
-      "bg-amber-50 text-amber-700",
-    ],
+    {
+      name: "My Reports",
+      value: reports.length,
+      sub: "Total submitted",
+      Icon: FileText,
+      color: "bg-emerald-50 text-emerald-700",
+      onClick: () => openReports("All"),
+    },
+    {
+      name: "Pending Reports",
+      value: pendingReports,
+      sub: "Awaiting government review",
+      Icon: Clock3,
+      color: "bg-amber-50 text-amber-700",
+      onClick: () => openReports("Pending Review"),
+    },
+    {
+      name: "Active Volunteer Tasks",
+      value: progressReports,
+      sub: "Currently in progress",
+      Icon: Activity,
+      color: "bg-sky-50 text-sky-700",
+      onClick: () => setView("volunteer"),
+    },
+    {
+      name: "Completed Tasks",
+      value: completedReports,
+      sub: "Successfully completed",
+      Icon: CheckCircle2,
+      color: "bg-violet-50 text-violet-700",
+      onClick: () => openReports("Completed"),
+    },
+    {
+      name: "Total Rewards",
+      value: `₹${user?.volunteer?.totalPointsEarned || 0}`,
+      sub: "Total earned",
+      Icon: Gift,
+      color: "bg-orange-50 text-orange-700",
+      onClick: () => setView("contribution"),
+    },
+    {
+      name: "My Stars",
+      value: user?.volunteer?.points || 0,
+      sub: "Community contribution score",
+      Icon: Star,
+      color: "bg-amber-50 text-amber-700",
+      onClick: () => setView("contribution"),
+    },
   ];
 
   return (
     <div className="space-y-8 p-5 md:p-8">
+
       {/* Hero Section */}
       <section className="relative overflow-hidden rounded-3xl bg-linear-to-br from-emerald-700 via-emerald-600 to-teal-500 p-6 text-white shadow-xl shadow-emerald-100 md:p-9">
         <div className="relative z-10 max-w-xl">
@@ -108,6 +120,7 @@ export default function Dashboard2({
 
           <div className="mt-7 flex flex-wrap gap-3">
             <button
+              type="button"
               onClick={() => navigate("/create-report")}
               className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-emerald-700 shadow-lg hover:bg-emerald-50"
             >
@@ -115,6 +128,7 @@ export default function Dashboard2({
             </button>
 
             <button
+              type="button"
               onClick={() => setView("volunteer")}
               className="rounded-xl bg-emerald-800/30 px-4 py-2.5 text-sm font-bold text-white ring-1 ring-white/25 hover:bg-emerald-800/50"
             >
@@ -135,10 +149,12 @@ export default function Dashboard2({
         />
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {stats.map(([name, value, sub, Icon, color]) => (
-            <div
+          {stats.map(({ name, value, sub, Icon, color, onClick }) => (
+            <button
+              type="button"
               key={name}
-              className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              onClick={onClick}
+              className="w-full rounded-2xl border border-slate-100 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -159,7 +175,7 @@ export default function Dashboard2({
               </div>
 
               <p className="mt-4 text-xs text-slate-400">{sub}</p>
-            </div>
+            </button>
           ))}
         </div>
       </section>
@@ -170,7 +186,7 @@ export default function Dashboard2({
           title="My Reports"
           subtitle="Track your latest environmental reports."
           action="View All"
-          onAction={() => setView("reports")}
+          onAction={() => openReports("All")}
         />
 
         <div className="grid gap-4 xl:grid-cols-3">
