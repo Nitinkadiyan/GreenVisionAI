@@ -1,6 +1,6 @@
 "use client";
 import axios from "axios";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect,useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import TaskModal from "./TaskModal";
 import ReportModal from "./ReportModal";
@@ -180,6 +180,7 @@ export default function governmentDashboard() {
   const navigate = useNavigate();
   const TotalReports = reportState.length;
   const TotalCleanuptasks = cleanupTasks.length;
+  const profileRef = useRef(null);
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: Activity },
     { id: "reports", label: "Reports", icon: FileSearch, count: TotalReports },
@@ -263,6 +264,22 @@ export default function governmentDashboard() {
       console.log(error);
     }
   };
+  useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (
+      profileRef.current &&
+      !profileRef.current.contains(event.target)
+    ) {
+      setProfileOpen(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
   useEffect(() => {
     getUserProfile();
   }, []);
@@ -542,22 +559,26 @@ export default function governmentDashboard() {
                   className="hidden text-slate-400 sm:block"
                 />
               </button>
-              {profileOpen && (
-                <div className="absolute right-0 top-12 w-52 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-                  <button
-                    onClick={() => chooseNav("settings")}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs hover:bg-slate-50"
-                  >
-                    <UserRound size={15} /> View officer profile
-                  </button>
-                  <button
-                    onClick={() => showToast("Preferences saved")}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs hover:bg-slate-50"
-                  >
-                    <Settings size={15} /> Account settings
-                  </button>
-                </div>
-              )}
+              <div ref={profileRef} className="relative">
+
+  {/* Your profile button */}
+
+  {profileOpen && (
+    <div className="absolute right-0 top-12 w-52 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+      <button
+        onClick={() => {
+          setProfileOpen(false);
+          chooseNav("settings");
+        }}
+        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs hover:bg-slate-50"
+      >
+        <UserRound size={15} />
+        View officer profile
+      </button>
+    </div>
+  )}
+
+</div>
             </div>
           </div>
         </header>
