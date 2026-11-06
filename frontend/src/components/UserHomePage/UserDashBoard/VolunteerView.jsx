@@ -107,9 +107,8 @@ export default function VolunteerView() {
                 <p className="mt-2 flex items-center gap-1 text-sm text-slate-500">
                   <MapPin size={15} className="text-emerald-600" />
                   {task.report?.location?.address
-                    .split(",")
-                    .slice(0, 2)
-                    .join(", ")}
+  ? task.report.location.address.split(",").slice(0, 2).join(", ")
+  : "Location unavailable"}
                 </p>
               </div>
               <Badge

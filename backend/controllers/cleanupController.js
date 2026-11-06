@@ -10,7 +10,7 @@ const updateReportStatus = async (req, res) => {
     const report = await Report.findByIdAndUpdate(
       id,
       { status },
-      { new: true }
+      { new: true },
     );
 
     if (!report) {
@@ -104,6 +104,40 @@ const getCleanuptasks = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message,
+    });
+  }
+};
+
+const getLandingPageTasks = async (req, res) => {
+  try {
+    // Allow a maximum of 6 tasks on the landing page
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 3, 1), 6);
+
+    const cleanupTasks = await CleanupTask.find({
+      status: "Available",
+    })
+      .populate({
+        path: "report",
+        select: "description location priority imageUrl aiAnalysis",
+      })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    // Exclude tasks whose associated reports no longer exist
+    const validTasks = cleanupTasks.filter((task) => task.report);
+
+    return res.status(200).json({
+      success: true,
+      count: validTasks.length,
+      cleanupTasks: validTasks,
+    });
+  } catch (error) {
+    console.error("Landing Page Tasks Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch landing page tasks",
     });
   }
 };
@@ -490,6 +524,7 @@ module.exports = {
   updateReportStatus,
   createCleanupTask,
   getCleanuptasks,
+  getLandingPageTasks,
   getCleanupTaskById,
   updateCleanupTask,
   deleteCleanupTask,

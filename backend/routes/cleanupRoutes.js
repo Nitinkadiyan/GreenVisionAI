@@ -1,11 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const  upload  = require("../middleware/multer.js");
+const upload = require("../middleware/multer.js");
 const { authorizeRoles } = require("../middleware/authorizeRole");
 const {
   updateReportStatus,
   createCleanupTask,
   getCleanuptasks,
+  getLandingPageTasks,
   getCleanupTaskById,
   updateCleanupTask,
   deleteCleanupTask,
@@ -17,11 +18,7 @@ const {
   rejectCleanuptask,
 } = require("../controllers/cleanupController");
 const { verifyToken } = require("../middleware/authMiddleware");
-router.patch(
-  "/reports/:id/status",
-  verifyToken,
-  updateReportStatus
-);
+router.patch("/reports/:id/status", verifyToken, updateReportStatus);
 router.post(
   "/create-cleanup-task",
   verifyToken,
@@ -31,13 +28,14 @@ router.post(
 router.get(
   "/clean-up-tasks",
   verifyToken,
- 
+
   getCleanuptasks,
 );
+router.get("/landing-page-tasks", getLandingPageTasks);
 router.get(
   "/clean-up-task/:id",
   verifyToken,
- 
+
   getCleanupTaskById,
 );
 router.patch(

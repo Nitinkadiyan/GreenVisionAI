@@ -53,7 +53,6 @@ export default function TaskModal({ report, onClose, onCreated, onCreate }) {
               value={reportId}
               onChange={(e) => setReportId(e.target.value)}
               placeholder="Select an approved report"
-              defaultValue={report?._id || ""}
               className="h-11 rounded-xl border border-slate-200 px-3 text-sm font-normal outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
             />
           </label>
@@ -111,9 +110,10 @@ export default function TaskModal({ report, onClose, onCreated, onCreate }) {
           </button>
           <button
             onClick={handleCreate}
+            disabled={loading}
             className="rounded-xl bg-[#087f5b] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#056b4d]"
           >
-            Create cleanup task
+            {loading?"Creating...":"Create cleanup task"}
           </button>
         </div>
       </div>
