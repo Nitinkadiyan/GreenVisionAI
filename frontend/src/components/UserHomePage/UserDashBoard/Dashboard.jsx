@@ -11,7 +11,7 @@ import ReportCard from "./ReportCard";
 import ReportsView from "./ReportsView";
 import VolunteerView from "./VolunteerView";
 import ReportDetail from "./ReportDetail";
-import CleanupPanel from "./CleanupPanel";
+import CleanupPanel from "./CleanupPanel.jsx";
 import Timeline from "./Timeline";
 import MyReports from "../MyReports";
 import ReportIssue from "../ReportIssue.jsx";
