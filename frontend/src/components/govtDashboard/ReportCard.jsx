@@ -13,7 +13,7 @@ export default function ReportCard({ report, onReview, onTask, formatDate }) {
         />
         <div className="absolute left-3 top-3 flex gap-2">
           <Badge tone={statusTone(report.status)}>{report.status}</Badge>
-          <Badge tone={statusTone(report.priority)}>{report.severity}</Badge>
+          <Badge tone={statusTone(report.priority)}>{report.aiAnalysis.severity}</Badge>
         </div>
         <button
           onClick={() => onReview(report)}
