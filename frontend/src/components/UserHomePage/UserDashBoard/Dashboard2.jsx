@@ -47,7 +47,7 @@ export default function Dashboard2({setView, query, reports = [], setSelectedRep
             sub: "Currently in progress",
             Icon: Activity,
             color: "bg-sky-50 text-sky-700",
-            onClick: () => setView("tasks"),
+            onClick: () => setView("volunteer"),
         },
         {
             name: "Completed Tasks",
@@ -55,7 +55,7 @@ export default function Dashboard2({setView, query, reports = [], setSelectedRep
             sub: "Successfully completed",
             Icon: CheckCircle2,
             color: "bg-violet-50 text-violet-700",
-            onClick: () => setView("cleanupPanel"),
+            onClick: () => setView("tasks"),
         },
         {
             name: "Total Rewards",

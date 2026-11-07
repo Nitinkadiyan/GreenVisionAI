@@ -15,6 +15,7 @@ import MapView from "./MapView";
 import NotificationsView from "./NotificationsView";
 import ProfileView from "./ProfileView";
 import ContributionView from "./ContributionView";
+import MyCleanupTask from "./MyCleanuptask.jsx";
 
 export default function UserDashboard() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -156,8 +157,10 @@ export default function UserDashboard() {
             />
         ) : view === "reportDetail" ? (
             <ReportDetail setView={setView} report={selectedReport} />
-        ) : view === "volunteer" || view === "tasks" ? (
+        ) : view === "volunteer" ? (
             <VolunteerView />
+        ) : view === "tasks" ? (
+            <MyCleanupTask user={user} />
         ) : view === "map" ? (
             <MapView setView={setView} reports={reports} setSelectedReport={setSelectedReport} />
         ) : view === "notifications" ? (
