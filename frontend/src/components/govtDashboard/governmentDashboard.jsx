@@ -325,13 +325,16 @@ export default function governmentDashboard() {
             console.log(error);
         }
     };
+
     const filteredReports = useMemo(
         () =>
             reportState.filter((report) => {
                 const matchesSearch = [
                     report.id,
-                    report.userId,
+
                     report.description,
+                    report.userId?.name,
+                    report.userId?.email,
                     report.address,
                     report.priority,
                     report.status,
@@ -347,6 +350,7 @@ export default function governmentDashboard() {
             }),
         [reportState, search, reportTab]
     );
+    console.log(filteredReports);
     const showToast = (message) => {
         setToast(message);
         window.setTimeout(() => setToast(""), 2600);
