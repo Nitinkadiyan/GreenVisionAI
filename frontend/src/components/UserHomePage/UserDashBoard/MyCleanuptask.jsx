@@ -40,7 +40,7 @@ export default function MyCleanupTask({user}) {
 
     const [completionTask, setCompletionTask] = useState(null);
     const [description, setDescription] = useState("");
-    const [beforeImage, setBeforeImage] = useState(null);
+  
     const [afterImage, setAfterImage] = useState(null);
 
     const userId = user?._id;
@@ -212,7 +212,7 @@ export default function MyCleanupTask({user}) {
     const openCompletionForm = (task) => {
         setCompletionTask(task);
         setDescription("");
-        setBeforeImage(null);
+       
         setAfterImage(null);
     };
 
@@ -220,7 +220,7 @@ export default function MyCleanupTask({user}) {
     const closeCompletionForm = () => {
         setCompletionTask(null);
         setDescription("");
-        setBeforeImage(null);
+        
         setAfterImage(null);
     };
 
@@ -228,7 +228,7 @@ export default function MyCleanupTask({user}) {
     const submitCompletion = async (event) => {
         event.preventDefault();
 
-        if (!beforeImage || !afterImage) {
+        if (!afterImage) {
             alert("Please upload both before and after images.");
             return;
         }
@@ -242,7 +242,7 @@ export default function MyCleanupTask({user}) {
             const token = localStorage.getItem("token");
             const formData = new FormData();
 
-            formData.append("beforeImage", beforeImage);
+            
             formData.append("afterImage", afterImage);
             formData.append("description", description.trim());
 
@@ -546,28 +546,7 @@ export default function MyCleanupTask({user}) {
                             <p className="mt-1 text-sm text-slate-500">{completionTask.title}</p>
                         </div>
 
-                        {/* Before image */}
-                        <div>
-                            <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                Before Cleanup Image
-                            </label>
-
-                            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 hover:border-emerald-400">
-                                <ImagePlus size={22} className="text-emerald-600" />
-
-                                <span className="min-w-0 truncate text-sm text-slate-600">
-                                    {beforeImage ? beforeImage.name : "Choose before image"}
-                                </span>
-
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={(event) => setBeforeImage(event.target.files?.[0] || null)}
-                                />
-                            </label>
-                        </div>
-
+                        
                         {/* After image */}
                         <div>
                             <label className="mb-2 block text-sm font-semibold text-slate-700">

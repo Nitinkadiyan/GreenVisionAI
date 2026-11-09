@@ -4,6 +4,8 @@ const fs = require("fs");
 const {analyzeImage} = require("../services/VisionService.js");
 const {report} = require("process");
 const {analyzeImageController} = require("./visionController.js");
+const sendEmail = require("../utils/sendEmail");
+const escalationTemplate = require("../templates/escalationTemplate");
 const analyzeReport = async (req, res) => {
     try {
         const {description} = req.body;
@@ -181,6 +183,30 @@ const getMyReports = async (req, res) => {
     }
 };
 
+const sendEscalationReport = async (req, res) => {
+    try {
+        const {id} = req.params;
+        const report = await Report.findById(id).populate("userId", "name email");
+        if (!report) {
+            return res.status(404).json({
+                success: false,
+                message: "Report not found",
+            });
+        }
+        const html = escalationTemplate(report);
+        await sendEmail(process.env.MUNICIPAL_CORPORATION_EMAIL, `Manual Review Required - Report ${report._id}`, html);
+        return res.status(200).json({
+            success: true,
+            message: "Escalation email sent successfully",
+        });
+    } catch (error) {
+        console.error("Escalation email error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to send escalation email",
+        });
+    }
+};
 // const getMyReports = async (req, res) => {
 //   try {
 //     console.log("========== MY REPORTS ==========");
@@ -340,4 +366,5 @@ module.exports = {
     deleteReport,
     deleteAllReports,
     getMyReports,
+    sendEscalationReport,
 };

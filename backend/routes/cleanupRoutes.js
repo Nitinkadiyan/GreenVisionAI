@@ -43,10 +43,7 @@ router.patch(
     "/:id/submit-completed-task",
     verifyToken,
     authorizeRoles("citizen"),
-    upload.fields([
-        {name: "beforeImage", maxCount: 1},
-        {name: "afterImage", maxCount: 1},
-    ]),
+    upload.fields([{name: "afterImage", maxCount: 1}]),
     submitCleanupCompletion
 );
 

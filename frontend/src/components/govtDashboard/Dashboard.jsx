@@ -69,7 +69,7 @@ export default function Dashboard({
     {
       label: "Total Reports",
       value: totalReports,
-      detail: "+12.4% this month",
+      detail: "",
       icon: FileSearch,
       color: "emerald",
       tab: "All",
@@ -77,7 +77,7 @@ export default function Dashboard({
     {
       label: "Pending Review",
       value: pendingReports,
-      detail: "Requires attention",
+      detail: "",
       icon: Clock3,
       color: "amber",
       tab: "Pending Review",
@@ -85,7 +85,7 @@ export default function Dashboard({
     {
       label: "In-Progress",
       value: inProgressReports,
-      detail: "Active operations",
+      detail: "",
       icon: Activity,
       color: "sky",
       tab: "In-Progress",
@@ -93,7 +93,7 @@ export default function Dashboard({
     {
       label: "Resolved",
       value: resolvedReports,
-      detail: "+18.2% this month",
+      detail:  " ",
       icon: CheckCircle2,
       color: "violet",
       tab: "Resolved",
@@ -101,7 +101,7 @@ export default function Dashboard({
     {
       label: "Critical Issues",
       value: criticalReports,
-      detail: "Immediate attention",
+      detail: "",
       icon: AlertTriangle,
       color: "rose",
       tab: "Critical",
@@ -144,7 +144,7 @@ export default function Dashboard({
               </div>
               {label === "Total Reports" || label === "Resolved" ? (
                 <span className="hidden items-center gap-1 text-[10px] font-bold text-emerald-600 sm:flex">
-                  <ArrowUpRight size={12} /> +12%
+                  <ArrowUpRight size={12} /> 
                 </span>
               ) : null}
             </div>
@@ -296,7 +296,7 @@ export default function Dashboard({
             </div>
           </div>
           <p className="mt-5 text-[11px] text-slate-400">
-            <span className="font-bold text-emerald-600">+112</span> new this
+            <span className="font-bold text-emerald-600"></span> new this
             month
           </p>
         </div>
