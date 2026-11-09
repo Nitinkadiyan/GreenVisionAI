@@ -1,5 +1,7 @@
 const cleanupTask = require("../models/cleanupTask");
 const CleanupTask = require("../models/cleanupTask");
+const cloudinary = require("../utils/cloudinary.js");
+
 const Report = require("../models/Report");
 const {analyzeCleanup} = require("../services/VisionService");
 const updateReportStatus = async (req, res) => {
@@ -403,46 +405,59 @@ const startCleanupTask = async (req, res) => {
         });
     }
 };
+
 const submitCleanupCompletion = async (req, res) => {
+    let uploadedAfterImagePublicId = null;
+
     try {
         const {id} = req.params;
         const {description, latitude, longitude} = req.body;
-        const afterImage = req.files?.afterImage?.[0];
-        const cleanupTask = await CleanupTask.findById(id);
-        if (!cleanupTask) {
-            return res.status(404).json({
-                success: false,
-                message: "Cleanup task not found",
-            });
-        }
-        if (!cleanupTask.volunteer || cleanupTask.volunteer.toString() !== req.user.id.toString()) {
-            return res.status(400).json({
-                success: false,
-                message: "You are not assigned this task",
-            });
-        }
-        if (cleanupTask.status !== "In-Progress") {
-            return res.status(400).json({
-                success: false,
-                message: "Only in-progress task can be completed",
-            });
-        }
+
+        // 1. Validate description
         if (!description || !description.trim()) {
             return res.status(400).json({
                 success: false,
                 message: "Completion description is required",
             });
         }
-        const beforeImage = req.files?.beforeImage?.[0];
-        // const afterImage = req.files?.afterImage?.[0];
 
-        if (!beforeImage || !afterImage) {
+        // 2. Get after image uploaded by volunteer
+        const afterImage = req.files?.afterImage?.[0];
+
+        if (!afterImage) {
             return res.status(400).json({
                 success: false,
-                message: "Both before and after images are required",
+                message: "After-cleanup image is required",
             });
         }
 
+        // 3. Find cleanup task
+        const cleanupTask = await CleanupTask.findById(id);
+
+        if (!cleanupTask) {
+            return res.status(404).json({
+                success: false,
+                message: "Cleanup task not found",
+            });
+        }
+
+        // 4. Verify volunteer assignment
+        if (!cleanupTask.volunteer || cleanupTask.volunteer.toString() !== req.user.id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not assigned this task",
+            });
+        }
+
+        // 5. Verify task status
+        if (cleanupTask.status !== "In-Progress") {
+            return res.status(400).json({
+                success: false,
+                message: "Only in-progress tasks can be completed",
+            });
+        }
+
+        // 6. Fetch original report
         const report = await Report.findById(cleanupTask.report);
 
         if (!report) {
@@ -451,31 +466,44 @@ const submitCleanupCompletion = async (req, res) => {
                 message: "Original report not found",
             });
         }
-        console.log(report);
+
+        // 7. Original report image becomes the before image
+        const beforeImage = report.imageUrl;
+        const beforeImagePublicId = report.imagePublicId;
+
+        if (!beforeImage) {
+            return res.status(400).json({
+                success: false,
+                message: "Original report image not found",
+            });
+        }
+
+        // 8. Upload volunteer's after image to Cloudinary
+        const afterImageUploaded = await cloudinary.uploader.upload(afterImage.path, {
+            folder: "greenvision/cleanup-completions",
+            resource_type: "image",
+        });
+
+        uploadedAfterImagePublicId = afterImageUploaded.public_id;
+
+        const afterImageUrl = afterImageUploaded.secure_url;
+        const afterImagePublicId = afterImageUploaded.public_id;
+
+        // 9. Get original report AI analysis
         const analysis = report.aiAnalysis;
-        console.log("beforeImage");
-        console.log(beforeImage);
-        // console.log(afterImage);
+
+        // 10. Run AI cleanup verification
+
         const aiResult = await analyzeCleanup({
             beforeImage,
-            afterImage,
-            description,
-            analysis,
-        });
-        console.log(aiResult);
-        cleanupTask.completion = {
-            beforeImageUrl: beforeImage.path,
-            beforeImagePublicId: beforeImage.filename,
-
-            afterImageUrl: afterImage.path,
-            afterImagePublicId: afterImage.filename,
-
+            afterImage: afterImageUrl,
             description: description.trim(),
-
-            submittedAt: new Date(),
-        };
-
-        // 9. Save AI result
+            analysis: report.aiAnalysis,
+        });
+        if (!aiResult || typeof aiResult.verified !== "boolean") {
+            throw new Error("Invalid AI verification response");
+        }
+        // 11. Prepare AI verification data
         const aiVerification = {
             verified: aiResult.verified,
             confidence: aiResult.confidence,
@@ -486,23 +514,60 @@ const submitCleanupCompletion = async (req, res) => {
             evidenceMatchesDescription: aiResult.evidenceMatchesDescription,
             summary: aiResult.summary,
             recommendation: aiResult.recommendation,
-            verifiedAt: new Date(),
+            verifiedAt: aiResult.verifiedAt || new Date(),
         };
-        console.log(aiVerification);
+
+        // 12. Save completion evidence
+        cleanupTask.completion.beforeImageUrl = beforeImage;
+        cleanupTask.completion.beforeImagePublicId = beforeImagePublicId || null;
+
+        cleanupTask.completion.afterImageUrl = afterImageUrl;
+        cleanupTask.completion.afterImagePublicId = afterImagePublicId;
+
+        cleanupTask.completion.description = description.trim();
+
+        cleanupTask.completion.latitude = latitude !== undefined && latitude !== "" ? Number(latitude) : null;
+
+        cleanupTask.completion.longitude = longitude !== undefined && longitude !== "" ? Number(longitude) : null;
+
+        cleanupTask.completion.submittedAt = new Date();
+
+        // 13. Save AI verification inside CleanupTask
+        cleanupTask.completion.aiVerification = aiVerification;
+
+        // 14. Update task status
         cleanupTask.status = "Completion-Submitted";
+
+        // 15. Persist everything in MongoDB
         await cleanupTask.save();
+
+        // 16. Send response
         return res.status(200).json({
             success: true,
-            message: "cleanup completion submitted successfully",
+            message: "Cleanup completion submitted successfully",
             cleanupTask,
         });
     } catch (error) {
-        console.log(error);
-        return res.json(500).json({
-            message: error.message,
+        console.error("Cleanup completion submission error:", error);
+
+        // Remove uploaded Cloudinary image if processing or saving fails
+        if (uploadedAfterImagePublicId) {
+            try {
+                await cloudinary.uploader.destroy(uploadedAfterImagePublicId);
+            } catch (cleanupError) {
+                console.error("Failed to remove uploaded image:", cleanupError.message);
+            }
+        }
+
+        return res.status(500).json({
             success: false,
+            message: error.message || "Failed to submit cleanup completion",
         });
     }
+};
+
+module.exports = {
+    submitCleanupCompletion,
 };
 
 const UnderReviewTask = async (req, res) => {
