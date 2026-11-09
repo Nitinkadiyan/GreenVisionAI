@@ -270,6 +270,8 @@ export default function governmentDashboard() {
     console.log("logout function started");
     try {
       localStorage.removeItem("token");
+      window.dispatchEvent(new Event("auth:changed"));
+navigate("/login");
     } catch (error) {
       console.log(error);
     } finally {

@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Upload } from "lucide-react";
 import SectionTitle from "./SectionTitle";
+import Placeholder from "./Placeholder.jsx";
 
-export default function ProfileView({ setLogout, user, setUser }) {
+export default function ProfileView({ setLogout, user, setUser, setView }) {
   const navigate = useNavigate();
 
   const [editing, setEditing] = useState(false);
@@ -39,7 +40,8 @@ export default function ProfileView({ setLogout, user, setUser }) {
     }
 
     localStorage.removeItem("token");
-    navigate("/login");
+    window.dispatchEvent(new Event("auth:changed"));
+navigate("/login");
   };
 
   const handleChange = (e) => {
@@ -122,6 +124,7 @@ export default function ProfileView({ setLogout, user, setUser }) {
     : "Not available";
 
   return (
+    <>
     <div className="p-5 md:p-8">
       <SectionTitle
         title="My Profile"
@@ -245,7 +248,14 @@ export default function ProfileView({ setLogout, user, setUser }) {
             />
           </label>
         </div>
+                  <Placeholder
+  active="profile"
+  setActive={(section) => setView(section)}
+/>
       </div>
+
     </div>
+
+    </>
   );
 }

@@ -6,7 +6,6 @@ export default function CleanupPanel({ cleanupTask, onViewDetails }) {
     return (
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <h3 className="font-bold text-slate-900">Cleanup Task</h3>
-
         <p className="mt-4 text-sm leading-6 text-slate-500">
           No cleanup task has been assigned to this report yet.
         </p>
@@ -14,28 +13,37 @@ export default function CleanupPanel({ cleanupTask, onViewDetails }) {
     );
   }
 
-  const status = cleanupTask.status || "Unknown";
+  const status = String(cleanupTask.status || "Unknown").trim();
+  const normalizedStatus = status.toLowerCase();
 
   const statusTone = {
-    completed: "green",
-    resolved: "green",
-    "in progress": "blue",
-    accepted: "amber",
+    available: "slate",
     assigned: "amber",
-    pending: "slate",
+    "in-progress": "blue",
+    "completion-submitted": "amber",
+    "under-review": "amber",
+    completed: "green",
+    cancelled: "slate",
   };
 
-  const formattedDeadline = cleanupTask.deadline
-    ? new Date(cleanupTask.deadline).toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    : "Not specified";
+  const deadlineDate = cleanupTask.deadline
+    ? new Date(cleanupTask.deadline)
+    : null;
+
+  const formattedDeadline =
+    deadlineDate && !Number.isNaN(deadlineDate.getTime())
+      ? deadlineDate.toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
+      : "Not specified";
+
+  const rewardAmount = cleanupTask.reward?.amount;
 
   const reward =
-    cleanupTask.reward !== null && cleanupTask.reward !== undefined
-      ? `₹${cleanupTask.reward}`
+    rewardAmount !== null && rewardAmount !== undefined
+      ? `₹${rewardAmount}`
       : "Not specified";
 
   return (
@@ -43,9 +51,7 @@ export default function CleanupPanel({ cleanupTask, onViewDetails }) {
       <div className="flex items-center justify-between gap-3">
         <h3 className="font-bold">Cleanup Task</h3>
 
-        <Badge
-          tone={statusTone[status.toLowerCase()] || "slate"}
-        >
+        <Badge tone={statusTone[normalizedStatus] || "slate"}>
           {status}
         </Badge>
       </div>
@@ -63,7 +69,6 @@ export default function CleanupPanel({ cleanupTask, onViewDetails }) {
 
         <div>
           <span className="text-slate-400">Guideline</span>
-
           <p className="mt-1 leading-5 text-slate-200">
             {cleanupTask.guideline ||
               "Follow the assigned cleanup instructions and safely dispose of collected waste."}

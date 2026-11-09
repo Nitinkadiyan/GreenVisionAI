@@ -2,6 +2,7 @@
 import { AlertTriangle, Check, ClipboardCheck, MapPin, Sparkles, X } from "lucide-react";
 import Badge from "./Badge";
 import statusTone from "./statusTone";
+import { getSeverityConfig } from "../../utils/severity";
 
 export default function ReportModal({
   report,
@@ -12,6 +13,8 @@ export default function ReportModal({
   onReject,
   formatDate,
 }) {
+  const severity = getSeverityConfig(report?.aiAnalysis?.severity);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 p-0 backdrop-blur-sm sm:items-center sm:p-5">
       <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
@@ -37,10 +40,16 @@ export default function ReportModal({
               className="aspect-4/3 w-full rounded-2xl object-cover"
             />
             <div className="mt-4 flex gap-2">
-              <Badge tone={statusTone(report.status)}>{report.status}</Badge>
-              <Badge tone={statusTone(report.priority)}>
-                {report.aiAnalysis.severity} priority
-              </Badge>
+              <Badge tone={statusTone(report.status)}>
+  {report.status}
+</Badge>
+
+<span
+  className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${severity.badge}`}
+>
+  {severity.label} Severity
+</span>
+                
             </div>
             <p className="mt-4 text-sm leading-6 text-slate-600">
               {report.description}
@@ -79,9 +88,9 @@ export default function ReportModal({
                   <p className="text-[10px] font-semibold uppercase text-emerald-800/55">
                     Waste type
                   </p>
-                  <p className="mt-1 text-sm font-bold text-emerald-950">
-                    Plastic & mixed waste
-                  </p>
+                  <p className="text-sm font-bold text-emerald-950">
+  {report.aiAnalysis?.wasteType || "Not detected"}
+</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase text-emerald-800/55">
@@ -92,13 +101,18 @@ export default function ReportModal({
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold uppercase text-emerald-800/55">
-                    Severity
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-rose-700">
-                    {report.aiAnalysis.severity}
-                  </p>
-                </div>
+  <p className="text-[10px] font-semibold uppercase text-emerald-800/55">
+    Severity
+  </p>
+
+  <div className="mt-1 flex items-center gap-2">
+    <span className={`h-2.5 w-2.5 rounded-full ${severity.dot}`} />
+
+    <p className={`text-sm font-bold ${severity.text}`}>
+      {severity.label}
+    </p>
+  </div>
+</div>
                 <div>
                   <p className="text-[10px] font-semibold uppercase text-emerald-800/55">
                     Est. waste

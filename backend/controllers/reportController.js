@@ -4,6 +4,7 @@ const fs = require("fs");
 const { analyzeImage } = require("../services/VisionService.js");
 const { report } = require("process");
 const { analyzeImageController } = require("./visionController.js");
+const { createNotification } = require("../services/notificationService");
 const analyzeReport = async (req, res) => {
   try {
     const { description } = req.body;
@@ -44,9 +45,9 @@ const createReport = async (req, res) => {
   try {
     const { description, address, city, longitude, latitude, aiAnalysis } =
       req.body;
-      console.log("function started");
-      console.log("address :", address);
-      console.log("city",city);
+    console.log("function started");
+    console.log("address :", address);
+    console.log("city", city);
     if (!description) {
       return res.status(400).json({
         success: false,
@@ -97,7 +98,7 @@ const createReport = async (req, res) => {
       imageUrl: uploadedImage.secure_url,
       imagePublicId: uploadedImage.public_id,
       aiAnalysis: parsedAnalysis,
-      priority:parsedAnalysis.severity,
+      priority: parsedAnalysis.severity,
       status: "Pending Review",
     });
     // if (req.file && fs.existsSync(req.file.path)) {
@@ -108,11 +109,18 @@ const createReport = async (req, res) => {
       message: "Report created successfully!",
       data: report,
     });
-  } catch (e) {
-    console.log(e);
+  } catch (error) {
+    console.error("========== CREATE REPORT ERROR ==========");
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+    console.error("Error details:", error);
+    console.error("==========================================");
+
     return res.status(500).json({
       success: false,
       message: "Internal server error",
+      error: error.message, // Development only
     });
   }
 };

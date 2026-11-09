@@ -168,7 +168,7 @@ export default function UserDashboard() {
     ) : view === "notifications" ? (
       <NotificationsView />
     ) : view === "profile" ? (
-      <ProfileView setLogout={setLogout} user={user} setUser={setUser} />
+      <ProfileView setLogout={setLogout} user={user} setUser={setUser} setView={setView}/>
     ) : (
       <ContributionView user={user} />
     );

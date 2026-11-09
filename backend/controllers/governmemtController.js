@@ -1,5 +1,6 @@
 const Report = require("../models/Report.js");
-
+const User = require("../models/User.js");
+const { createNotification } = require("../services/notificationService.js");
 const getAllGovReports = async (req, res) => {
   try {
     const reports = await Report.find();
@@ -20,30 +21,68 @@ const getAllGovReports = async (req, res) => {
 const approveReport = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // 1. Find the report
     const report = await Report.findById(id);
+
     if (!report) {
       return res.status(404).json({
         success: false,
         message: "Report not found!",
       });
     }
+
+    // 2. Prevent duplicate approval
     if (report.status === "Approved") {
       return res.status(400).json({
         success: false,
-        message: "report already approved",
+        message: "Report already approved",
       });
     }
+
+    // 3. Update report status
     report.status = "Approved";
     report.approvedBy = req.user.id;
     report.approvedAt = new Date();
+
     await report.save();
+
+    console.log("Report approved successfully:", report._id);
+
+    // 4. Create notification for the citizen
+    try {
+      const io = req.app.get("io");
+
+      if (!io) {
+        throw new Error("Socket.IO instance not found");
+      }
+
+      const notification = await createNotification(io, {
+        recipient: report.userId,
+        sender: req.user.id,
+        type: "REPORT_APPROVED",
+        title: "Report Approved",
+        message: "Your environmental report has been approved.",
+        relatedEntity: {
+          entityType: "Report",
+          entityId: report._id,
+        },
+      });
+
+      console.log("Notification saved successfully:", notification._id);
+    } catch (notificationError) {
+      console.error("Notification creation failed:", notificationError);
+    }
+
+    // 5. Return response
     return res.status(200).json({
       success: true,
-      message: "Report is approved",
+      message: "Report approved successfully",
       data: report,
     });
-  } catch (e) {
-    console.log(e);
+  } catch (error) {
+    console.error("Approve report error:", error);
+
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -70,7 +109,7 @@ const rejectReport = async (req, res) => {
     }
     report.status = "Rejected";
     report.rejectionReason = reason;
-    report.save();
+    await report.save();
     return res.status(200).json({
       success: true,
       message: "report rejected successfully!",
@@ -97,7 +136,13 @@ const assignPriority = async (req, res) => {
           "Allowed priorites are low, medium, high and critical. Please use accordingly!",
       });
     }
-    const report = await Reports.findById(id);
+    const report = await Report.findById(id);
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found!",
+      });
+    }
     if (report.status === "Rejected") {
       return res.status(400).json({
         success: false,
@@ -126,7 +171,7 @@ const assignDeadline = async (req, res) => {
     if (!deadline) {
       return res.status(400).json({
         success: false,
-        message: "Deadline is required1",
+        message: "Deadline is required!",
       });
     }
     const report = await Report.findById(id);
@@ -144,7 +189,7 @@ const assignDeadline = async (req, res) => {
       });
     }
 
-    if (NaN(deadlineDate.getTime())) {
+    if (Number.isNaN(deadlineDate.getTime())) {
       return res.status(400).json({
         success: false,
         message: "Invalid deadline",
@@ -182,8 +227,8 @@ const assignReward = async (req, res) => {
         message: "Amount must be a valid number",
       });
     }
-    const report = await Reports.findById(id);
-    if (!reports) {
+    const report = await Report.findById(id);
+    if (!report) {
       return res.status(404).json({
         success: false,
         message: "Report not found",
@@ -192,7 +237,7 @@ const assignReward = async (req, res) => {
 
     report.assignReward = amount;
     await report.save();
-    return res.stats(200).json({
+    return res.status(200).json({
       success: true,
       message: "Reward assignmed successfully",
     });
@@ -263,11 +308,13 @@ const escalateReport = async (req, res) => {
 
 const reportAnalytics = async (req, res) => {
   try {
-    const totalReports = Report.countDocuments();
-    const approvedReports = Report.countDocuments({ status: "Approved" });
-    const pendingReports = Report.countDocuments({ status: "Pending Review" });
-    const rejectedReports = Report.countDocuments({ status: "Rejected" });
-    const assignedReports = Report.countDocuments({ status: "Assigned" });
+    const totalReports = await Report.countDocuments();
+    const approvedReports = await Report.countDocuments({ status: "Approved" });
+    const pendingReports = await Report.countDocuments({
+      status: "Pending Review",
+    });
+    const rejectedReports = await Report.countDocuments({ status: "Rejected" });
+    const assignedReports = await Report.countDocuments({ status: "Assigned" });
     const inProgressReports = await Report.countDocuments({
       status: "In Progress",
     });

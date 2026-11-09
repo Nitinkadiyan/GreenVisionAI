@@ -2,7 +2,9 @@
 import { MoreHorizontal, MapPin } from "lucide-react";
 import Badge from "./Badge";
 import statusTone from "./statusTone";
+import { getSeverityConfig } from "../../utils/severity";
 export default function ReportCard({ report, onReview, onTask, formatDate }) {
+  const severity = getSeverityConfig(report?.aiAnalysis?.severity);
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/30 transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="relative h-44">
@@ -13,7 +15,11 @@ export default function ReportCard({ report, onReview, onTask, formatDate }) {
         />
         <div className="absolute left-3 top-3 flex gap-2">
           <Badge tone={statusTone(report.status)}>{report.status}</Badge>
-          <Badge tone={statusTone(report.priority)}>{report.severity}</Badge>
+          <span
+  className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${severity.badge}`}
+>
+  {severity.label}
+</span>
         </div>
         <button
           onClick={() => onReview(report)}
@@ -48,9 +54,13 @@ export default function ReportCard({ report, onReview, onTask, formatDate }) {
             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
               AI severity
             </p>
-            <p className="mt-1 text-xs font-bold text-rose-600">
-              {report.aiAnalysis.severity}
-            </p>
+            <p className={`mt-1 text-xs font-bold ${
+  severity.color === "slate"
+    ? "text-slate-500"
+    : `text-${severity.color}-600`
+}`}>
+  {severity.label}
+</p>
           </div>
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
