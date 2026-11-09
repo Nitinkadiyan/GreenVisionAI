@@ -1,0 +1,299 @@
+const escalationTemplate = (report) => {
+    const {_id, description, priority, location, aiAnalysis, userId, imageUrl} = report;
+
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual Review Request</title>
+</head>
+
+<body style="margin:0;padding:0;background:#f5f7fa;font-family:Arial,Helvetica,sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 15px;">
+<tr>
+<td align="center">
+
+<table width="600" cellpadding="0" cellspacing="0"
+style="
+background:#ffffff;
+border:2px solid #111827;
+border-radius:18px;
+overflow:hidden;
+">
+
+<!-- Header -->
+<tr>
+<td style="
+background:#111827;
+padding:28px;
+text-align:center;
+">
+
+<h1 style="
+margin:0;
+color:#22c55e;
+font-size:20px;
+font-weight:bold;
+">
+🌿 GreenVision AI
+</h1>
+
+<p style="
+margin-top:8px;
+color:#d1d5db;
+font-size:12px;
+">
+AI Powered Environmental Intelligence
+</p>
+
+</td>
+</tr>
+
+<!-- Email Content -->
+<tr>
+<td style="padding:40px;">
+
+<h2 style="
+margin:0;
+color:#111827;
+font-size:20px;
+">
+Manual Review Required
+</h2>
+
+<p style="
+margin-top:20px;
+font-size:14px;
+line-height:1.7;
+color:#4b5563;
+">
+Dear Municipal Corporation Team,
+</p>
+
+<p style="
+font-size:14px;
+line-height:1.7;
+color:#4b5563;
+">
+A citizen has submitted an environmental issue through
+<strong>GreenVision AI</strong>. The report has been escalated
+by an authorized officer and requires manual review by your department.
+</p>
+
+<!-- Status -->
+<div style="
+margin:30px 0;
+padding:18px;
+background:#fff7ed;
+border-left:4px solid #f59e0b;
+border-radius:10px;
+">
+
+<p style="
+margin:0;
+font-size:13px;
+font-weight:bold;
+color:#92400e;
+">
+REPORT STATUS: ESCALATED
+</p>
+
+<p style="
+margin:8px 0 0;
+font-size:12px;
+color:#78350f;
+">
+Action required: Manual verification and necessary corrective action.
+</p>
+
+</div>
+
+<!-- Report Details -->
+<h3 style="
+color:#111827;
+font-size:16px;
+">
+Report Details
+</h3>
+
+<table width="100%" cellpadding="12" cellspacing="0"
+style="border-collapse:collapse;font-size:13px;color:#4b5563;">
+
+<tr style="background:#f9fafb;">
+<td><strong>Report ID</strong></td>
+<td>${_id}</td>
+</tr>
+
+<tr>
+<td><strong>Submitted By</strong></td>
+<td>${userId?.name || "Unknown User"}</td>
+</tr>
+
+<tr style="background:#f9fafb;">
+<td><strong>Priority</strong></td>
+<td>${priority || "Not Available"}</td>
+</tr>
+
+<tr>
+<td><strong>Location</strong></td>
+<td>${location?.address || "Not Available"}</td>
+</tr>
+
+<tr style="background:#f9fafb;">
+<td><strong>Description</strong></td>
+<td>${description || "Not Provided"}</td>
+</tr>
+
+</table>
+
+<!-- AI Analysis -->
+<h3 style="
+margin-top:30px;
+color:#111827;
+font-size:16px;
+">
+AI Environmental Assessment
+</h3>
+
+<div style="
+padding:20px;
+background:#ecfdf5;
+border-radius:12px;
+">
+
+<p style="font-size:13px;color:#065f46;">
+<strong>Waste Type:</strong>
+${aiAnalysis?.wasteType || "Not Available"}
+</p>
+
+<p style="font-size:13px;color:#065f46;">
+<strong>Confidence:</strong>
+${aiAnalysis?.confidence ?? "Not Available"}${aiAnalysis?.confidence != null ? "%" : ""}
+</p>
+
+<p style="font-size:13px;color:#065f46;">
+<strong>Severity:</strong>
+${aiAnalysis?.severity || "Not Available"}
+</p>
+
+<p style="font-size:13px;line-height:1.7;color:#065f46;">
+<strong>Environmental Risk:</strong><br/>
+${aiAnalysis?.environmentalRisk || "Not Available"}
+</p>
+
+<p style="font-size:13px;line-height:1.7;color:#065f46;">
+<strong>Recommended Action:</strong><br/>
+${aiAnalysis?.possibleAction || "Not Available"}
+</p>
+
+</div>
+
+<!-- Image Evidence -->
+${
+    imageUrl
+        ? `
+<h3 style="
+margin-top:30px;
+color:#111827;
+font-size:16px;
+">
+Reported Image Evidence
+</h3>
+
+<img
+src="${imageUrl}"
+alt="Environmental issue evidence"
+style="
+width:100%;
+max-width:500px;
+border-radius:12px;
+"
+/>
+`
+        : ""
+}
+
+<!-- Request -->
+<p style="
+margin-top:30px;
+font-size:14px;
+line-height:1.7;
+color:#4b5563;
+">
+We kindly request your department to manually inspect the
+reported location, verify the environmental issue, and take
+appropriate corrective measures.
+</p>
+
+<p style="
+font-size:14px;
+line-height:1.7;
+color:#4b5563;
+">
+Your timely intervention will help maintain a cleaner and
+healthier environment.
+</p>
+
+<p style="
+margin-top:30px;
+font-size:14px;
+color:#374151;
+">
+Regards,<br/>
+<strong>GreenVision AI Team</strong>
+</p>
+
+</td>
+</tr>
+
+<!-- Footer -->
+<tr>
+<td style="
+background:#111827;
+padding:28px;
+text-align:center;
+">
+
+<p style="
+margin:0;
+font-size:15px;
+color:#22c55e;
+font-weight:bold;
+">
+GreenVision AI
+</p>
+
+<p style="
+margin-top:8px;
+color:#9ca3af;
+font-size:13px;
+">
+Building a Cleaner Tomorrow with Artificial Intelligence 🌎
+</p>
+
+<p style="
+margin-top:20px;
+font-size:11px;
+color:#6b7280;
+">
+This is an automated notification generated by GreenVision AI.
+</p>
+
+</td>
+</tr>
+
+</table>
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>
+`;
+};
+
+module.exports = escalationTemplate;

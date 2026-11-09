@@ -33,7 +33,7 @@ export default function ReportCard({ report, onReview, onTask, formatDate }) {
           <div>
             <p className="text-sm font-bold">{report.aiAnalysis.wasteType}</p>
             <p className="mt-1 text-xs text-slate-500">
-              Submitted by {report.userId}
+              Submitted by {report.userId?.name}
             </p>
           </div>
           <p className="text-right text-[10px] font-medium text-slate-400">

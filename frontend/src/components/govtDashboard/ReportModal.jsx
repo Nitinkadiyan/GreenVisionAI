@@ -1,5 +1,8 @@
+import {useState} from "react";
+import axios from "axios";
 
-import { AlertTriangle, Check, ClipboardCheck, MapPin, Sparkles, X } from "lucide-react";
+import {AlertTriangle, Check, ClipboardCheck, MapPin, Sparkles, X} from "lucide-react";
+
 import Badge from "./Badge";
 import statusTone from "./statusTone";
 import { getSeverityConfig } from "../../utils/severity";
@@ -121,64 +124,7 @@ export default function ReportModal({
                     {report.aiAnalysis.wasteType}
                   </p>
                 </div>
-              </div>
-              <div className="mt-5 border-t border-emerald-200/60 pt-4">
-                <p className="text-[10px] font-semibold uppercase text-emerald-800/55">
-                  Environmental risk
-                </p>
-                <p className="mt-1 text-xs leading-5 text-emerald-950/75">
-                  {report.aiAnalysis.environmentalRisk}
-                </p>
-                <p className="mt-4 text-[10px] font-semibold uppercase text-emerald-800/55">
-                  Recommended action
-                </p>
-                <p className="mt-1 text-xs leading-5 text-emerald-950/75">
-                  {report.aiAnalysis.possibleAction}
-                </p>
-              </div>
             </div>
-            <div className="mt-5 rounded-2xl border border-slate-200 p-5">
-              <div className="flex items-center gap-2">
-                <MapPin size={16} className="text-emerald-600" />
-                <p className="text-sm font-bold">Location</p>
-              </div>
-              <p className="mt-2 text-sm font-semibold">
-                {report.location?.address?.split(",").slice(0, 4).join(", ") ||
-                  ""}
-              </p>
-              <p className="mt-1 text-xs text-slate-400">
-                {report.location.latitude},{report.location.longitude}
-              </p>
-            </div>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <button
-                onClick={() => onApprove(report._id)}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#087f5b] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#056b4d]"
-              >
-                <Check size={15} /> Approve report
-              </button>
-              <button
-                onClick={() => onAction("Report escalated for review")}
-                className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-bold text-amber-700 hover:bg-amber-100"
-              >
-                <AlertTriangle size={15} /> Escalate
-              </button>
-              <button
-                onClick={() => onReject(report._id)}
-                className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-700 hover:bg-rose-100"
-              >
-                <X size={15} /> Reject
-              </button>
-              <button
-                onClick={onTask}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
-              >
-                <ClipboardCheck size={15} /> Create cleanup task
-              </button>
-            </div>
-          </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }
