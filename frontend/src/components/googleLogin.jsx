@@ -1,156 +1,171 @@
-import { useEffect, useRef, useCallback } from "react";
+
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 
-const API_URL = "http://localhost:5001";
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5001";
 
-export default function GoogleLogin({ onSuccess, onError }) {
+const GOOGLE_SCRIPT_URL =
+  "https://accounts.google.com/gsi/client";
+
+export default function GoogleLogin({
+  onSuccess,
+  onError,
+  role = "citizen",
+  accessCode = "",
+}) {
   const googleButtonRef = useRef(null);
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
 
-  const handleGoogleResponse = useCallback(
-    async (response) => {
-      try {
-        const result = await axios.post(
-          `${API_URL}/auth/google`,
-          {
-            credential: response.credential,
-          },
-          {
-            withCredentials: true,
-          }
-        );
-
-        if (result.data.success) {
-          onSuccess?.(result.data);
-        }
-      } catch (error) {
-        const message =
-          error.response?.data?.message ||
-          "Google login failed. Please try again.";
-
-        console.error("Google login failed:", message);
-        onError?.(message);
-      }
-    },
-    [onSuccess, onError]
+  const [scriptReady, setScriptReady] = useState(
+    Boolean(window.google?.accounts?.id)
   );
 
+  const [buttonWidth, setButtonWidth] = useState(320);
+
+  // Keep the latest callbacks without repeatedly initializing Google.
   useEffect(() => {
-    let cancelled = false;
+    onSuccessRef.current = onSuccess;
+    onErrorRef.current = onError;
+  }, [onSuccess, onError]);
 
-    const initializeGoogle = () => {
-      if (
-        cancelled ||
-        !window.google ||
-        !googleButtonRef.current ||
-        !import.meta.env.VITE_GOOGLE_CLIENT_ID
-      ) {
-        return;
-      }
+  // Load Google Identity Services.
+  useEffect(() => {
+    if (window.google?.accounts?.id) {
+      setScriptReady(true);
+      return;
+    }
 
-      googleButtonRef.current.innerHTML = "";
+    let script = document.querySelector(
+      `script[src="${GOOGLE_SCRIPT_URL}"]`
+    );
 
-      window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        callback: handleGoogleResponse,
-      });
+    const handleLoad = () => setScriptReady(true);
 
-      window.google.accounts.id.renderButton(
-        googleButtonRef.current,
-        {
-          theme: "outline",
-          size: "large",
-          text: "continue_with",
-          shape: "rectangular",
-          width: 280,
-        }
+    const handleError = () => {
+      onErrorRef.current?.(
+        "Unable to load Google authentication. Please try again."
       );
     };
 
-    const scriptUrl =
-      "https://accounts.google.com/gsi/client";
-
-    let script = document.querySelector(
-      `script[src="${scriptUrl}"]`
-    );
-
-    if (window.google) {
-      initializeGoogle();
-    } else if (script) {
-      script.addEventListener("load", initializeGoogle, {
-        once: true,
-      });
-    } else {
+    if (!script) {
       script = document.createElement("script");
-      script.src = scriptUrl;
+      script.src = GOOGLE_SCRIPT_URL;
       script.async = true;
       script.defer = true;
-      script.onload = initializeGoogle;
-
-      script.onerror = () => {
-        onError?.("Unable to load Google sign-in.");
-      };
-
       document.head.appendChild(script);
     }
 
+    script.addEventListener("load", handleLoad);
+    script.addEventListener("error", handleError);
+
     return () => {
-      cancelled = true;
+      script.removeEventListener("load", handleLoad);
+      script.removeEventListener("error", handleError);
     };
-  }, [handleGoogleResponse, onError]);
+  }, []);
+
+  // Measure the available width for Google's real button.
+  useEffect(() => {
+    const container = googleButtonRef.current;
+
+    if (!container) return;
+
+    const updateWidth = () => {
+      const availableWidth = container.clientWidth;
+
+      if (availableWidth > 0) {
+        setButtonWidth(Math.min(availableWidth, 400));
+      }
+    };
+
+    updateWidth();
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Initialize and render the Google button.
+  useEffect(() => {
+    if (!scriptReady || !window.google?.accounts?.id) return;
+
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+    if (!clientId) {
+      onErrorRef.current?.(
+        "Google Client ID is missing. Check your frontend environment variables."
+      );
+      return;
+    }
+
+    const container = googleButtonRef.current;
+
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+
+      callback: async (response) => {
+        try {
+          if (!response?.credential) {
+            throw new Error("Google credential was not received.");
+          }
+
+          const result = await axios.post(
+            `${API_URL}/google`,
+            {
+              credential: response.credential,
+              role,
+              accessCode:
+                role === "government" ? accessCode.trim() : "",
+            },
+            {
+              withCredentials: true,
+            }
+          );
+
+          onSuccessRef.current?.(result.data);
+        } catch (error) {
+          const message =
+            error.response?.data?.message ||
+            error.message ||
+            "Google authentication failed.";
+
+          onErrorRef.current?.(message);
+        }
+      },
+    });
+
+    window.google.accounts.id.renderButton(container, {
+      theme: "outline",
+      size: "large",
+      text: "continue_with",
+      shape: "rectangular",
+      width: buttonWidth,
+    });
+
+    return () => {
+      container.innerHTML = "";
+    };
+  }, [scriptReady, buttonWidth, role, accessCode]);
 
   return (
-    <div className="relative w-full">
-      {/* Your custom button */}
-      <button
-        type="button"
-        onClick={() => {
-          const googleButton =
-            googleButtonRef.current?.querySelector(
-              'div[role="button"]'
-            );
-
-          if (googleButton) {
-            googleButton.click();
-          } else {
-            onError?.(
-              "Google sign-in is still loading. Please try again."
-            );
-          }
-        }}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:scale-[1.02] hover:border-primary/30"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          className="h-4 w-4"
-          aria-hidden="true"
-        >
-          <path
-            fill="#4285F4"
-            d="M23.5 12.27c0-.86-.08-1.7-.22-2.5H12v4.73h6.45a5.52 5.52 0 0 1-2.39 3.62v3h3.86c2.26-2.08 3.58-5.15 3.58-8.85Z"
-          />
-          <path
-            fill="#34A853"
-            d="M12 24c3.24 0 5.96-1.08 7.95-2.9l-3.87-3a7.2 7.2 0 0 1-10.72-3.77H1.36v3.09A12 12 0 0 0 12 24Z"
-          />
-          <path
-            fill="#FBBC05"
-            d="M5.36 14.33a7.2 7.2 0 0 1 0-4.6V6.64H1.36a12 12 0 0 0 0 10.78l4-3.09Z"
-          />
-          <path
-            fill="#EA4335"
-            d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.43-3.42C17.95 1.2 15.24 0 12 0A12 12 0 0 0 1.36 6.64l4 3.09A7.2 7.2 0 0 1 12 4.75Z"
-          />
-        </svg>
-
-        Continue with Google
-      </button>
-
-      {/* Google's actual button, positioned over the custom button */}
+    <div className="w-full">
       <div
         ref={googleButtonRef}
-        className="absolute inset-0 z-10 opacity-0"
-        aria-hidden="true"
+        className="flex min-h-10 w-full justify-center overflow-hidden"
       />
+
+      {!scriptReady && (
+        <p className="mt-2 text-center text-xs text-slate-500">
+          Loading Google sign-in...
+        </p>
+      )}
     </div>
   );
 }

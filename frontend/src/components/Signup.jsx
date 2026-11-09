@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import GoogleLogin from "./googleLogin";
 
 import {
   ArrowRight,
@@ -104,6 +105,36 @@ export default function SignUp() {
   const [submitted, setSubmitted] = useState(false);
 
   const navigate = useNavigate();
+  const handleGoogleSuccess = (data) => {
+  if (!data?.success || !data?.token) {
+    setErrors((prev) => ({
+      ...prev,
+      submit: data?.message || "Google authentication failed.",
+    }));
+    return;
+  }
+
+  localStorage.setItem("token", data.token);
+
+  if (data.user) {
+    localStorage.setItem("user", JSON.stringify(data.user));
+  }
+
+  window.dispatchEvent(new Event("auth:changed"));
+
+  navigate(
+    data.user?.role === "government"
+      ? "/government-page"
+      : "/user-home-page"
+  );
+};
+
+const handleGoogleError = (message) => {
+  setErrors((prev) => ({
+    ...prev,
+    submit: message || "Google signup failed.",
+  }));
+};
 
   // Update form fields
   const updateField = (event) => {
@@ -802,24 +833,23 @@ export default function SignUp() {
                 </div>
 
                 {/* SOCIAL LOGIN */}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    className="flex h-12 items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                  >
-                    <span className="text-base font-bold text-red-500">
-                      G
-                    </span>
-                    Continue with Google
-                  </button>
+                  {/* GOOGLE SIGNUP */}
+{/* GOOGLE SIGNUP */}
+<div className="w-full space-y-3">
+  <GoogleLogin
+    role={role}
+    accessCode={role === "government" ? form.accessCode : ""}
+    onSuccess={handleGoogleSuccess}
+    onError={handleGoogleError}
+  />
 
-                  <button
-                    type="button"
-                    className="flex h-12 items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-                  >
-                    Continue with Facebook
-                  </button>
-                </div>
+  <p className="text-center text-xs text-slate-500">
+    {role === "government"
+      ? "Government signup requires a valid government access code."
+      : "Continue with Google to create your citizen account."}
+  </p>
+</div>
+                
 
                 {/* LOGIN LINK */}
                 <p className="text-center text-sm text-slate-500">

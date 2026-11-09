@@ -6,10 +6,13 @@ import "./index.css";
 import "leaflet/dist/leaflet.css";
 
 import App from "./App.jsx";
+import { SocketProvider } from "./context/SocketContext.jsx";
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <SocketProvider>
+        <App />
+      </SocketProvider>
     </BrowserRouter>
   </StrictMode>,
 );

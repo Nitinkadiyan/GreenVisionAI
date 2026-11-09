@@ -189,81 +189,54 @@ export default function governmentDashboard() {
             icon: ClipboardCheck,
             count: TotalCleanuptasks,
         },
-        {id: "map", label: "Environmental Map", icon: Globe2},
-        {id: "volunteers", label: "Volunteers", icon: Users},
-        {id: "rewards", label: "Rewards", icon: Sparkles},
-        {id: "notifications", label: "Notifications", icon: Bell, count: 7},
-        {id: "settings", label: "Settings", icon: Settings},
-    ];
-    const formatDate = (date) => {
-        return new Date(date).toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-        });
-    };
-    const rejectReport = async (reportId) => {
-        try {
-            const token = localStorage.getItem("token");
-            const response = await axios.patch(
-                `http://localhost:5001/volunteer/reports/${reportId}/status`,
-                {status: "Rejected"},
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-            console.log("rejected", response);
-            setReportState((currentReports) =>
-                currentReports.map((report) => (report._id === reportId ? {...report, status: "Rejected"} : report))
-            );
-            setSelectedReport(null);
-            showToast("report rejected successfully");
-        } catch (error) {
-            console.log(error);
-        }
-    };
-    const getVolunteers = async (req, res) => {
-        try {
-            const token = localStorage.getItem("token");
-            const response = await axios.get("http://localhost:5001/volunteerProfile/all", {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            console.log("API RESPONSE:", response.data);
-            setVolunteers(response.data.Volunteers);
-        } catch (error) {
-            console.log(error);
-            alert("Something is wrong.Please try again");
-        }
-    };
-    useEffect(() => {
-        getVolunteers();
-    }, []);
-    // getVolunteers();
-    const getUserProfile = async (req, res) => {
-        try {
-            const token = localStorage.getItem("token");
-            const response = await axios.get("http://localhost:5001/me", {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            // console.log(response);
-            // console.log(response.data.user);
-            setProfile(response.data.user);
-        } catch (error) {
-            console.log(error);
-        }
-    };
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (profileRef.current && !profileRef.current.contains(event.target)) {
-                setProfileOpen(false);
-            }
-        };
+      });
+      // console.log(response);
+      // console.log(response.data.user);
+      setProfile(response.data.user);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    getUserProfile();
+  }, []);
+  const handleLogout = async () => {
+    console.log("logout function started");
+    try {
+      localStorage.removeItem("token");
+      window.dispatchEvent(new Event("auth:changed"));
+navigate("/login");
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setTimeout(showToast("Logged Out Successfully"), 2000);
+      navigate("/login");
+    }
+  };
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      showToast("Please Login First");
+      return;
+    }
+    getAllReports();
+    getAllCleanups();
+  }, []);
+  const getAllCleanups = async () => {
+    // console.log("nikku doing work");
+    const token = localStorage.getItem("token");
+    const response = await axios.get(
+      "http://localhost:5001/volunteer/clean-up-tasks",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+    // console.log("FULL Cleanup Response:", response.data.cleanupTasks);
+    setCleanupTasks(response.data.cleanupTasks || []);
+  };
 
         document.addEventListener("mousedown", handleClickOutside);
 
