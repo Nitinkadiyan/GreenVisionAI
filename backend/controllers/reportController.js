@@ -1,11 +1,10 @@
 const Report = require("../models/Report.js");
 const cloudinary = require("../utils/cloudinary.js");
 const fs = require("fs");
-const {analyzeImage} = require("../services/VisionService.js");
-const {report} = require("process");
-const {analyzeImageController} = require("./visionController.js");
-const sendEmail = require("../utils/sendEmail");
-const escalationTemplate = require("../templates/escalationTemplate");
+const { analyzeImage } = require("../services/VisionService.js");
+const { report } = require("process");
+const { analyzeImageController } = require("./visionController.js");
+const { createNotification } = require("../services/notificationService");
 const analyzeReport = async (req, res) => {
     try {
         const {description} = req.body;
@@ -43,79 +42,87 @@ const analyzeReport = async (req, res) => {
     }
 };
 const createReport = async (req, res) => {
-    try {
-        const {description, address, city, longitude, latitude, aiAnalysis} = req.body;
-        console.log("function started");
-        console.log("address :", address);
-        console.log("city", city);
-        if (!description) {
-            return res.status(400).json({
-                success: false,
-                message: "Description is required!",
-            });
-        }
-        // console.log(req.file);
-        // console.log("nikku");
-        // console.log(req.files.image);
-        if (!req.files) {
-            return res.status(400).json({
-                success: false,
-                message: "Image is required",
-            });
-        }
-        // console.log(req.files);
-        // console.log(req.files.image);
-        console.log("nikku");
-        const image = req.files?.image?.[0];
-        console.log(image);
-        if (!image) {
-            return res.status(400).json({
-                success: false,
-                message: "Image is required",
-            });
-        }
-        if (!aiAnalysis) {
-            return res.status(400).json({
-                success: false,
-                message: "AI analysis is required",
-            });
-        }
-        const parsedAnalysis = JSON.parse(aiAnalysis);
-        // const result = await analyzeImage(image);
-
-        const uploadedImage = await cloudinary.uploader.upload(image.path);
-        console.log("before result");
-        // console.log(result);
-        const report = await Report.create({
-            userId: req.user.id,
-            description: description,
-            location: {
-                latitude,
-                longitude,
-                address,
-                city,
-            },
-            imageUrl: uploadedImage.secure_url,
-            imagePublicId: uploadedImage.public_id,
-            aiAnalysis: parsedAnalysis,
-            priority: parsedAnalysis.severity,
-            status: "Pending Review",
-        });
-        // if (req.file && fs.existsSync(req.file.path)) {
-        //   fs.unlinkSync(req.file.path);
-        // }
-        return res.status(200).json({
-            success: true,
-            message: "Report created successfully!",
-            data: report,
-        });
-    } catch (e) {
-        console.log(e);
-        return res.status(500).json({
-            success: false,
-            message: "Internal server error",
-        });
+  try {
+    const { description, address, city, longitude, latitude, aiAnalysis } =
+      req.body;
+    console.log("function started");
+    console.log("address :", address);
+    console.log("city", city);
+    if (!description) {
+      return res.status(400).json({
+        success: false,
+        message: "Description is required!",
+      });
     }
+    // console.log(req.file);
+    // console.log("nikku");
+    // console.log(req.files.image);
+    if (!req.files) {
+      return res.status(400).json({
+        success: false,
+        message: "Image is required",
+      });
+    }
+    // console.log(req.files);
+    // console.log(req.files.image);
+    console.log("nikku");
+    const image = req.files?.image?.[0];
+    console.log(image);
+    if (!image) {
+      return res.status(400).json({
+        success: false,
+        message: "Image is required",
+      });
+    }
+    if (!aiAnalysis) {
+      return res.status(400).json({
+        success: false,
+        message: "AI analysis is required",
+      });
+    }
+    const parsedAnalysis = JSON.parse(aiAnalysis);
+    // const result = await analyzeImage(image);
+
+    const uploadedImage = await cloudinary.uploader.upload(image.path);
+    console.log("before result");
+    // console.log(result);
+    const report = await Report.create({
+      userId: req.user.id,
+      description: description,
+      location: {
+        latitude,
+        longitude,
+        address,
+        city,
+      },
+      imageUrl: uploadedImage.secure_url,
+      imagePublicId: uploadedImage.public_id,
+      aiAnalysis: parsedAnalysis,
+      priority: parsedAnalysis.severity,
+      status: "Pending Review",
+    });
+    // if (req.file && fs.existsSync(req.file.path)) {
+    //   fs.unlinkSync(req.file.path);
+    // }
+    return res.status(200).json({
+      success: true,
+      message: "Report created successfully!",
+      data: report,
+    });
+  } catch (error) {
+    console.error("========== CREATE REPORT ERROR ==========");
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+    console.error("Error details:", error);
+    console.error("==========================================");
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message, // Development only
+    });
+  }
 };
 
 const getAllReports = async (req, res) => {

@@ -47,28 +47,72 @@ export default function UserDashboard() {
         setView("reports");
     };
 
-    // Fetch user's reports
-    useEffect(() => {
-        const fetchReports = async () => {
-            try {
-                setReportsLoading(true);
-                setReportsError("");
+    fetchReports();
+  }, []);
 
-                const token = localStorage.getItem("token");
-
-                if (!token) {
-                    setReportsError("Please log in first.");
-                    return;
-                }
-
-                const response = await axios.get("http://localhost:5001/reports/my-reports", {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-
-                console.log("FULL REPORT API RESPONSE:", response.data);
-                console.log("FETCHED REPORTS:", response.data.reports);
+  const getUserProfile = async (req, res) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get("http://localhost:5001/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(response);
+      console.log(response.data.user);
+      setUser(response.data.user);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    getUserProfile();
+  }, []);
+  const handleLogout = async () => {
+    console.log("logout function started");
+    try {
+      localStorage.removeItem("token");
+    } catch (error) {
+      console.log(error);
+    } finally {
+      navigate("/login");
+    }
+  };
+  const content =
+    view === "dashboard" ? (
+      <Dashboard2
+  setView={setView}
+  query={query}
+  reports={reports}
+  setSelectedReport={setSelectedReport}
+/>
+    ) : view === "reports" ? (
+      <ReportsView
+        setView={setView}
+        query={query}
+        setQuery={setQuery}
+        setSelectedReport={setSelectedReport}
+        reports={reports}
+        reportsLoading={reportsLoading}
+        reportsError={reportsError}
+      />
+    ) : view === "reportDetail" ? (
+      <ReportDetail setView={setView} report={selectedReport} />
+    ) : view === "volunteer" || view === "tasks" ? (
+      <VolunteerView />
+    ) : view === "map" ? (
+      <MapView
+        setView={setView}
+        reports={reports}
+        setSelectedReport={setSelectedReport}
+      />
+    ) : view === "notifications" ? (
+      <NotificationsView />
+    ) : view === "profile" ? (
+      <ProfileView setLogout={setLogout} user={user} setUser={setUser} setView={setView}/>
+    ) : (
+      <ContributionView user={user} />
+    );
 
                 setReports(Array.isArray(response.data.reports) ? response.data.reports : []);
             } catch (error) {

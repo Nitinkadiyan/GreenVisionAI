@@ -363,84 +363,143 @@ const deleteUser = async (req, res) => {
         });
     }
 };
+
 const GoogleAuth = async (req, res) => {
-    try {
-        const {credential} = req.body;
+  try {
+    const {
+      credential,
+      role: requestedRole = "citizen",
+      accessCode,
+    } = req.body;
 
-        if (!credential) {
-            return res.status(400).json({
-                success: false,
-                message: "Google credential is required",
-            });
-        }
-
-        // Verify the Google ID token
-        const ticket = await googleClient.verifyIdToken({
-            idToken: credential,
-            audience: process.env.GOOGLE_CLIENT_ID,
-        });
-
-        const payload = ticket.getPayload();
-
-        const {sub: googleId, email, email_verified, name, picture} = payload;
-
-        if (!email || !email_verified) {
-            return res.status(401).json({
-                success: false,
-                message: "A verified Google email is required",
-            });
-        }
-
-        // Find an account already linked to this Google ID
-        let user = await User.findOne({googleId});
-
-        if (!user) {
-            // Do not automatically link an existing local account
-            const existingUser = await User.findOne({email});
-
-            if (existingUser) {
-                return res.status(409).json({
-                    success: false,
-                    message: "An account with this email already exists. Please log in using your existing method.",
-                });
-            }
-
-            // Create a new citizen account
-            user = await User.create({
-                name,
-                email,
-                googleId,
-                authProvider: "google",
-                role: "citizen",
-                isVerified: true,
-                profilePicture: {
-                    url: picture || "",
-                    publicId: "",
-                },
-            });
-        }
-
-        // Issue GreenVision's own JWT
-        const token = createSecretToken(user._id, user.role);
-
-        // Remove sensitive fields from the returned user
-        const safeUser = await User.findById(user._id).select("-password -confirmPassword -otp -otpExpiry -accessCode");
-
-        return res.status(200).json({
-            success: true,
-            message: "Google authentication successful",
-            user: safeUser,
-            token,
-        });
-    } catch (error) {
-        console.error("Google authentication error:", error.message);
-
-        return res.status(401).json({
-            success: false,
-            message: "Google authentication failed",
-        });
+    // 1. Validate Google credential
+    if (!credential) {
+      return res.status(400).json({
+        success: false,
+        message: "Google credential is required",
+      });
     }
+
+    // 2. Verify Google ID token on the backend
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const { sub: googleId, email, email_verified, name, picture } = payload;
+
+    if (!email || !email_verified) {
+      return res.status(401).json({
+        success: false,
+        message: "A verified Google email is required",
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // 3. Check whether this Google account already exists
+    let user = await User.findOne({ googleId });
+
+    // EXISTING GOOGLE USER: Login using the role stored in MongoDB
+    if (user) {
+      const token = createSecretToken(user._id, user.role);
+
+      const safeUser = await User.findById(user._id).select(
+        "-password -confirmPassword -otp -otpExpiry -accessCode",
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Google login successful",
+        user: safeUser,
+        token,
+      });
+    }
+
+    // 4. Prevent automatic linking to an existing local account
+    const existingUser = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message:
+          "An account with this email already exists. Please use your existing login method.",
+      });
+    }
+
+    // 5. Validate requested account type
+    if (!["citizen", "government"].includes(requestedRole)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid account type",
+      });
+    }
+
+    // 6. Government accounts require the existing access code
+    let assignedRole = "citizen";
+
+    if (requestedRole === "government") {
+      const expectedCode = process.env.GOVERNMENT_ACCESS_CODE;
+
+      if (!expectedCode || !accessCode) {
+        return res.status(400).json({
+          success: false,
+          message: "Government access code is required",
+        });
+      }
+
+      if (accessCode.trim() !== expectedCode.trim()) {
+        return res.status(403).json({
+          success: false,
+          message: "Invalid government access code",
+        });
+      }
+
+      assignedRole = "government";
+    }
+
+    // 7. Create new Google account
+    user = await User.create({
+      name,
+      email: normalizedEmail,
+      googleId,
+      authProvider: "google",
+      role: assignedRole,
+      isVerified: true,
+      profilePicture: {
+        url: picture || "",
+        publicId: "",
+      },
+    });
+
+    // 8. Generate GreenVision AI JWT
+    const token = createSecretToken(user._id, user.role);
+
+    // 9. Return safe user details
+    const safeUser = await User.findById(user._id).select(
+      "-password -confirmPassword -otp -otpExpiry -accessCode",
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Google signup successful",
+      user: safeUser,
+      token,
+    });
+  } catch (error) {
+    console.error("Google authentication error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Google authentication failed",
+    });
+  }
 };
+
 const sendMobileOtp = async (req, res) => {
     try {
         const {phone} = req.body;

@@ -219,6 +219,54 @@ export default function governmentDashboard() {
                 setProfileOpen(false);
             }
         };
+      });
+      // console.log(response);
+      // console.log(response.data.user);
+      setProfile(response.data.user);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    getUserProfile();
+  }, []);
+  const handleLogout = async () => {
+    console.log("logout function started");
+    try {
+      localStorage.removeItem("token");
+      window.dispatchEvent(new Event("auth:changed"));
+navigate("/login");
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setTimeout(showToast("Logged Out Successfully"), 2000);
+      navigate("/login");
+    }
+  };
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      showToast("Please Login First");
+      return;
+    }
+    getAllReports();
+    getAllCleanups();
+  }, []);
+  const getAllCleanups = async () => {
+    // console.log("nikku doing work");
+    const token = localStorage.getItem("token");
+    const response = await axios.get(
+      "http://localhost:5001/volunteer/clean-up-tasks",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+    // console.log("FULL Cleanup Response:", response.data.cleanupTasks);
+    setCleanupTasks(response.data.cleanupTasks || []);
+  };
 
         document.addEventListener("mousedown", handleClickOutside);
 

@@ -4,13 +4,14 @@ import { useState } from "react";
 import {
   MapContainer,
   TileLayer,
-  Marker,
   Popup,
+  CircleMarker,
 } from "react-leaflet";
 
 import { MapPin } from "lucide-react";
 
 import SectionTitle from "./SectionTitle";
+import { getSeverityConfig } from "../../.././utils/severity";
 
 export default function MapView({
   reports = [],
@@ -24,7 +25,6 @@ export default function MapView({
     const latitude = report.location?.latitude;
     const longitude = report.location?.longitude;
 
-    // Reject null, undefined and empty values
     if (
       latitude === null ||
       latitude === undefined ||
@@ -66,6 +66,7 @@ export default function MapView({
 
         {/* Interactive Map */}
         <div className="relative z-0 h-[550px] overflow-hidden rounded-3xl border border-emerald-100 shadow-sm">
+
           <MapContainer
             center={[22.5, 79]}
             zoom={4}
@@ -80,43 +81,70 @@ export default function MapView({
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            {mappedReports.map((report) => (
-              <Marker
-                key={report._id}
-                position={[
-                  Number(report.location.latitude),
-                  Number(report.location.longitude),
-                ]}
-                eventHandlers={{
-                  click: () => setSelected(report),
-                }}
-              >
-                <Popup>
-                  <div className="min-w-40">
-                    <strong>
-                      {report.aiAnalysis?.wasteType ||
-                        "Environmental Report"}
-                    </strong>
+            {/* Severity-Based Map Markers */}
+            {mappedReports.map((report) => {
+              const severity = getSeverityConfig(
+                report.aiAnalysis?.severity
+              );
 
-                    <p className="mt-1 text-sm">
-                      {report.location?.address ||
-                        "Location unavailable"}
-                    </p>
+              return (
+                <CircleMarker
+                  key={report._id}
+                  center={[
+                    Number(report.location.latitude),
+                    Number(report.location.longitude),
+                  ]}
+                  radius={9}
+                  pathOptions={{
+                    color: severity.marker,
+                    fillColor: severity.marker,
+                    fillOpacity: 0.85,
+                    weight: 2,
+                  }}
+                  eventHandlers={{
+                    click: () => setSelected(report),
+                  }}
+                >
+                  <Popup>
+                    <div className="min-w-40">
+                      <strong>
+                        {report.aiAnalysis?.wasteType ||
+                          "Environmental Report"}
+                      </strong>
 
-                    <p className="mt-1 text-sm">
-                      Status: {report.status || "Unknown"}
-                    </p>
+                      <p className="mt-1 text-sm">
+                        {report.location?.address ||
+                          "Location unavailable"}
+                      </p>
 
-                    <button
-                      onClick={() => handleViewReport(report)}
-                      className="mt-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white"
-                    >
-                      View Report
-                    </button>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
+                      <p className="mt-1 text-sm">
+                        Status: {report.status || "Unknown"}
+                      </p>
+
+                      <div className="mt-2 flex items-center gap-2">
+                        <span
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{
+                            backgroundColor: severity.marker,
+                          }}
+                        />
+
+                        <span className="text-sm font-semibold">
+                          {severity.label} Severity
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => handleViewReport(report)}
+                        className="mt-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white"
+                      >
+                        View Report
+                      </button>
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              );
+            })}
           </MapContainer>
 
           {/* Map Counter */}
@@ -128,10 +156,39 @@ export default function MapView({
 
             {mappedReports.length} mapped reports
           </div>
+
+          {/* AI Severity Legend */}
+          <div className="absolute bottom-4 left-4 z-[1000] rounded-xl bg-white/95 p-3 shadow-lg backdrop-blur-sm">
+
+            <p className="mb-2 text-xs font-bold text-slate-700">
+              AI Severity Legend
+            </p>
+
+            {[
+              { label: "Low", color: "bg-green-500" },
+              { label: "Medium", color: "bg-yellow-500" },
+              { label: "High", color: "bg-orange-500" },
+              { label: "Critical", color: "bg-red-500" },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="mb-1 flex items-center gap-2"
+              >
+                <span
+                  className={`h-2.5 w-2.5 rounded-full ${item.color}`}
+                />
+
+                <span className="text-xs text-slate-600">
+                  {item.label}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Report Details Panel */}
         <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
+
           <h3 className="font-bold text-slate-900">
             Report Details
           </h3>
@@ -170,6 +227,7 @@ export default function MapView({
 
               {/* Status and Severity */}
               <div className="rounded-xl bg-slate-50 p-3">
+
                 <p className="text-xs text-slate-500">
                   Status
                 </p>
@@ -178,13 +236,32 @@ export default function MapView({
                   {selected.status || "Unknown"}
                 </p>
 
-                <p className="mt-3 text-xs text-slate-500">
-                  Severity
-                </p>
+                {(() => {
+                  const severity = getSeverityConfig(
+                    selected.aiAnalysis?.severity
+                  );
 
-                <p className="mt-1 text-sm font-semibold text-slate-800">
-                  {selected.aiAnalysis?.severity || "Unknown"}
-                </p>
+                  return (
+                    <>
+                      <p className="mt-3 text-xs text-slate-500">
+                        AI Severity
+                      </p>
+
+                      <div className="mt-2 flex items-center gap-2">
+                        <span
+                          className={`h-2.5 w-2.5 rounded-full ${severity.dot}`}
+                        />
+
+                        <span
+                          className={`text-sm font-bold ${severity.text}`}
+                        >
+                          {severity.label}
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
+
               </div>
 
               {/* Description */}
@@ -209,6 +286,7 @@ export default function MapView({
               >
                 Clear Selection
               </button>
+
             </div>
           )}
 
