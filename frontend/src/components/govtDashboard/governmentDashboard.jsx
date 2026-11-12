@@ -54,68 +54,6 @@ import {
     Zap,
 } from "lucide-react";
 import {useNavigate, useSearchParams} from "react-router-dom";
-// const volunteers = [
-//   {
-//     name: "Aarav Menon",
-//     email: "aarav.m@example.com",
-//     city: "Bengaluru",
-//     area: "Koramangala",
-//     score: 96,
-//     completed: 28,
-//     accepted: 31,
-//     progress: 2,
-//     rate: "90%",
-//     rewards: 12400,
-//     status: "Active",
-//     joined: "Jan 2026",
-//     color: "bg-emerald-100 text-emerald-800",
-//   },
-//   {
-//     name: "Ananya Rao",
-//     email: "ananya.r@example.com",
-//     city: "Bengaluru",
-//     area: "HSR Layout",
-//     score: 92,
-//     completed: 22,
-//     accepted: 25,
-//     progress: 1,
-//     rate: "88%",
-//     rewards: 9800,
-//     status: "Active",
-//     joined: "Feb 2026",
-//     color: "bg-violet-100 text-violet-800",
-//   },
-//   {
-//     name: "Rahul Mehta",
-//     email: "rahul.m@example.com",
-//     city: "Bengaluru",
-//     area: "Bellandur",
-//     score: 87,
-//     completed: 18,
-//     accepted: 24,
-//     progress: 3,
-//     rate: "75%",
-//     rewards: 7600,
-//     status: "Active",
-//     joined: "Mar 2026",
-//     color: "bg-amber-100 text-amber-800",
-//   },
-//   {
-//     name: "Priya Nair",
-//     email: "priya.n@example.com",
-//     city: "Bengaluru",
-//     area: "Indiranagar",
-//     score: 78,
-//     completed: 14,
-//     accepted: 18,
-//     progress: 0,
-//     rate: "78%",
-//     rewards: 5900,
-//     status: "Inactive",
-//     joined: "Nov 2025",
-//     color: "bg-sky-100 text-sky-800",
-//   },
-// ];
 
 const notifications = [
     {
@@ -189,6 +127,98 @@ export default function governmentDashboard() {
             icon: ClipboardCheck,
             count: TotalCleanuptasks,
         },
+        {id: "map", label: "Environmental Map", icon: Globe2},
+        {id: "volunteers", label: "Volunteers", icon: Users},
+        {id: "rewards", label: "Rewards", icon: Sparkles},
+        {id: "notifications", label: "Notifications", icon: Bell, count: 7},
+        {id: "settings", label: "Settings", icon: Settings},
+    ];
+    const formatDate = (date) => {
+        return new Date(date).toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+        });
+    };
+    const rejectReport = async (reportId) => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await axios.patch(
+                `http://localhost:5001/volunteer/reports/${reportId}/status`,
+                {status: "Rejected"},
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            console.log("rejected", response);
+            setReportState((currentReports) =>
+                currentReports.map((report) => (report._id === reportId ? {...report, status: "Rejected"} : report))
+            );
+            setSelectedReport(null);
+            showToast("report rejected successfully");
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const getVolunteers = async () => {
+        try {
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                setVolunteers([]);
+                return;
+            }
+
+            const response = await axios.get("http://localhost:5001/volunteerProfile/all", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            console.log("VOLUNTEER API RESPONSE:", response.data);
+
+            // The API returns User documents. A user is a volunteer only
+            // when their embedded volunteerProfile has been initialized.
+            const volunteerList = response.data?.volunteers;
+            const validVolunteers = Array.isArray(volunteerList)
+                ? volunteerList.filter((user) => user?._id && user?.volunteerProfile)
+                : [];
+
+            setVolunteers(validVolunteers);
+        } catch (error) {
+            console.error("GET VOLUNTEERS ERROR:", error.response?.data || error.message);
+            setVolunteers([]);
+        }
+    };
+
+    useEffect(() => {
+        getVolunteers();
+    }, []);
+    
+    const getUserProfile = async (req, res) => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await axios.get("http://localhost:5001/me", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            // console.log(response);
+            // console.log(response.data.user);
+            setProfile(response.data.user);
+        } catch (error) {
+            console.log(error);
+        }
+    };
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (profileRef.current && !profileRef.current.contains(event.target)) {
+                setProfileOpen(false);
+            }
+        };
       });
       // console.log(response);
       // console.log(response.data.user);

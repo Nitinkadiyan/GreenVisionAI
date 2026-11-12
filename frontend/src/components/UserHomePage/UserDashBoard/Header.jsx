@@ -73,7 +73,7 @@ export default function Header({
           <img
             src={
               user?.profilePicture?.url ||
-              "https://via.placeholder.com/40"
+              " "
             }
             alt="Profile"
             className="h-10 w-10 rounded-full object-cover"

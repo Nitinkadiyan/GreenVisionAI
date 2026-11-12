@@ -267,7 +267,7 @@ const handleGoogleError = (message) => {
       if (response.data.token) {
         localStorage.setItem("token", response.data.token);
       }
-
+     
       setSubmitted(true);
 
       navigate("/verify-email", {

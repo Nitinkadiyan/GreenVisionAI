@@ -11,6 +11,7 @@ const {
   GoogleAuth,
   sendMobileOtp,
   verifyMobileOtp,
+  updateProfilePicture
 } = require("../controllers/authController.js");
 const express = require("express");
 const { verifyToken } = require("../middleware/authMiddleware.js");
@@ -28,4 +29,5 @@ router.post("/change-password", changePassword);
 router.post("/reset-password", resetPassword);
 router.post("/verifyOtp", verifyOtp);
 router.patch("/update-user", verifyToken, updateUser);
+router.patch("/update-profile-picture", verifyToken, upload.single("profilePicture"), updateProfilePicture);
 module.exports = router;
