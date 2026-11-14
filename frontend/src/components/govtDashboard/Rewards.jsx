@@ -105,7 +105,7 @@ function DetailItem({icon: Icon, label, value}) {
             <Icon size={17} className="mt-0.5 shrink-0 text-slate-400" />
             <div className="min-w-0">
                 <p className="text-xs text-slate-400">{label}</p>
-                <p className="mt-1 break-words text-sm font-semibold text-slate-700">{value ?? "Not available"}</p>
+                <p className="mt-1 break-words text-sm font-semibold text-slate-700">{value ?? "Not adhbjhvailable"}</p>
             </div>
         </div>
     );
@@ -128,7 +128,7 @@ function VolunteerProfile({volunteer}) {
                     <h3 className="text-xl font-bold text-slate-900">{getVolunteerName(volunteer)}</h3>
                     <p className="mt-1 text-sm text-slate-500">{getVolunteerEmail(volunteer)}</p>
                     <div className="mt-2">
-                        <Badge tone={getStatusColor(volunteer.status)}>{volunteer.status || "Unknown"}</Badge>
+                        <Badge tone={getStatusColor(volunteer?.status)}>{volunteer?.status || "Unknown"}</Badge>
                     </div>
                 </div>
             </div>

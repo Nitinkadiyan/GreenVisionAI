@@ -2,17 +2,19 @@ import {useEffect, useRef, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import axios from "axios";
 import {Upload, Camera} from "lucide-react";
+
 import SectionTitle from "./SectionTitle";
-import Placeholder from "./Placeholder.jsx";
 
 export default function ProfileView({setLogout, user, setUser}) {
     const navigate = useNavigate();
+
     const fileInputRef = useRef(null);
     const previewUrlRef = useRef(null);
 
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
     const [selectedFile, setSelectedFile] = useState(null);
     const [preview, setPreview] = useState("");
 
@@ -27,6 +29,7 @@ export default function ProfileView({setLogout, user, setUser}) {
         area: "",
     });
 
+    // Synchronize form with the latest user data
     useEffect(() => {
         setForm({
             name: user?.name || "",
@@ -37,7 +40,7 @@ export default function ProfileView({setLogout, user, setUser}) {
         });
     }, [user]);
 
-    // Clean up temporary preview URLs.
+    // Clean up preview URL
     useEffect(() => {
         return () => {
             if (previewUrlRef.current) {
@@ -46,90 +49,19 @@ export default function ProfileView({setLogout, user, setUser}) {
         };
     }, []);
 
+    // Logout
     const handleLogout = () => {
         if (typeof setLogout === "function") {
             setLogout(true);
             return;
-export default function ProfileView({ setLogout, user, setUser, setView }) {
-  const navigate = useNavigate();
-
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    city: "",
-    area: "",
-  });
-
-  // Sync form whenever the parent updates the user.
-  useEffect(() => {
-    setForm({
-      name: user?.name || "",
-      phone: user?.phone || "",
-      email: user?.email || "",
-      city: user?.location?.city || "",
-      area: user?.location?.area || "",
-    });
-  }, [user]);
-
-  const handleLogout = () => {
-    if (typeof setLogout === "function") {
-      setLogout(true);
-      return;
-    }
-
-    localStorage.removeItem("token");
-    window.dispatchEvent(new Event("auth:changed"));
-navigate("/login");
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    setForm((currentForm) => ({
-      ...currentForm,
-      [name]: value,
-    }));
-  };
-
-  const handleSave = async () => {
-    setError("");
-    setSuccess("");
-
-    if (!form.name.trim() || !form.email.trim()) {
-      setError("Name and email are required.");
-      return;
-    }
-
-    try {
-      setSaving(true);
-
-      const token = localStorage.getItem("token");
-
-      const response = await axios.patch(
-        "http://localhost:5001/update-user",
-        {
-          name: form.name.trim(),
-          email: form.email.trim(),
-          phone: form.phone.trim(),
-          city: form.city.trim(),
-          area: form.area.trim(),
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
         }
 
         localStorage.removeItem("token");
+        window.dispatchEvent(new Event("auth:changed"));
         navigate("/login");
     };
 
+    // Handle profile form changes
     const handleChange = (e) => {
         const {name, value} = e.target;
 
@@ -139,14 +71,14 @@ navigate("/login");
         }));
     };
 
-    // Open file picker.
+    // Open image picker
     const handlePhotoClick = () => {
         setError("");
         setSuccess("");
         fileInputRef.current?.click();
     };
 
-    // Select and validate image.
+    // Select and validate image
     const handlePhotoSelect = (e) => {
         const file = e.target.files?.[0];
 
@@ -169,6 +101,7 @@ navigate("/login");
             return;
         }
 
+        // Remove previous temporary preview
         if (previewUrlRef.current) {
             URL.revokeObjectURL(previewUrlRef.current);
         }
@@ -176,11 +109,12 @@ navigate("/login");
         const previewURL = URL.createObjectURL(file);
 
         previewUrlRef.current = previewURL;
+
         setSelectedFile(file);
         setPreview(previewURL);
     };
 
-    // Upload selected image to backend.
+    // Upload profile image
     const handlePhotoUpload = async () => {
         if (!selectedFile) {
             setError("Please select an image first.");
@@ -193,95 +127,13 @@ navigate("/login");
             setSuccess("");
 
             const token = localStorage.getItem("token");
-    setEditing(false);
-    setError("");
-    setSuccess("");
-  };
-
-  const memberSince = user?.createdAt
-    ? new Date(user.createdAt).toLocaleDateString("en-IN")
-    : "Not available";
-
-  return (
-    <>
-    <div className="p-5 md:p-8">
-      <SectionTitle
-        title="My Profile"
-        subtitle="Manage your citizen profile and personal information."
-      />
-
-      <div className="max-w-3xl rounded-3xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
-
-        {/* Profile Header */}
-        <div className="flex flex-wrap items-center gap-5 border-b border-slate-100 pb-7">
-
-          <img
-            src={user?.profilePicture?.url || "/default-avatar.png"}
-            alt="Profile"
-            className="h-[72px] w-[72px] rounded-full object-cover"
-          />
-
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-slate-900">
-              {user?.name || "User"}
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              {user?.location?.city || "City not added"} · {user?.role || "Citizen"}
-            </p>
-
-            <button
-              type="button"
-              disabled
-              title="Profile photo upload is not implemented yet"
-              className="mt-3 flex cursor-not-allowed items-center gap-2 text-xs font-bold text-slate-400"
-            >
-              <Upload size={14} />
-              Change Photo
-            </button>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {editing && (
-              <button
-                type="button"
-                onClick={handleCancel}
-                disabled={saving}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={editing ? handleSave : () => setEditing(true)}
-              disabled={saving}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 disabled:opacity-50"
-            >
-              {saving
-                ? "Saving..."
-                : editing
-                  ? "Save Changes"
-                  : "Edit Profile"}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={saving}
-              className="rounded-xl bg-rose-50 px-4 py-2 text-sm font-bold text-rose-600"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
 
             if (!token) {
                 throw new Error("Please login again.");
             }
 
             const formData = new FormData();
+
             formData.append("profilePicture", selectedFile);
 
             const response = await axios.patch("http://localhost:5001/update-profile-picture", formData, {
@@ -296,6 +148,7 @@ navigate("/login");
                 throw new Error("Server did not return the updated profile picture.");
             }
 
+            // Update parent dashboard user state
             setUser(updatedUser);
 
             setSelectedFile(null);
@@ -320,6 +173,7 @@ navigate("/login");
         }
     };
 
+    // Cancel selected photo
     const handleCancelPhoto = () => {
         setSelectedFile(null);
         setPreview("");
@@ -336,6 +190,7 @@ navigate("/login");
         setError("");
     };
 
+    // Update profile information
     const handleSave = async () => {
         setError("");
         setSuccess("");
@@ -349,6 +204,10 @@ navigate("/login");
             setSaving(true);
 
             const token = localStorage.getItem("token");
+
+            if (!token) {
+                throw new Error("Please login again.");
+            }
 
             const response = await axios.patch(
                 "http://localhost:5001/update-user",
@@ -369,11 +228,12 @@ navigate("/login");
             const updatedUser = response.data.user;
 
             if (!updatedUser) {
-                throw new Error("The server did not return the updated user.");
+                throw new Error("Server did not return the updated user.");
             }
 
             setUser(updatedUser);
             setEditing(false);
+
             setSuccess("Profile updated successfully.");
         } catch (error) {
             console.error("Update Profile Error:", error);
@@ -384,6 +244,7 @@ navigate("/login");
         }
     };
 
+    // Cancel profile editing
     const handleCancel = () => {
         setForm({
             name: user?.name || "",
@@ -459,7 +320,15 @@ navigate("/login");
 
                         <button
                             type="button"
-                            onClick={editing ? handleSave : () => setEditing(true)}
+                            onClick={
+                                editing
+                                    ? handleSave
+                                    : () => {
+                                          setError("");
+                                          setSuccess("");
+                                          setEditing(true);
+                                      }
+                            }
                             disabled={saving}
                             className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 disabled:opacity-50"
                         >
@@ -477,7 +346,7 @@ navigate("/login");
                     </div>
                 </div>
 
-                {/* Hidden File Input */}
+                {/* Hidden Image Input */}
                 <input
                     ref={fileInputRef}
                     type="file"
@@ -486,11 +355,12 @@ navigate("/login");
                     className="hidden"
                 />
 
-                {/* Selected Photo Preview */}
+                {/* Image Preview and Upload */}
                 {selectedFile && (
                     <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 p-4">
                         <div className="min-w-0">
                             <p className="truncate text-sm font-bold text-emerald-900">{selectedFile.name}</p>
+
                             <p className="mt-1 text-xs text-emerald-700">
                                 {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
                             </p>
@@ -501,7 +371,7 @@ navigate("/login");
                                 type="button"
                                 onClick={handleCancelPhoto}
                                 disabled={uploadingPhoto}
-                                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600"
+                                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 disabled:opacity-50"
                             >
                                 Cancel
                             </button>
@@ -518,7 +388,7 @@ navigate("/login");
                     </div>
                 )}
 
-                {/* Feedback */}
+                {/* Feedback Messages */}
                 {error && <p className="mt-5 rounded-xl bg-rose-50 p-3 text-sm text-rose-600">{error}</p>}
 
                 {success && <p className="mt-5 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-600">{success}</p>}
@@ -558,14 +428,4 @@ navigate("/login");
             </div>
         </div>
     );
-                  <Placeholder
-  active="profile"
-  setActive={(section) => setView(section)}
-/>
-      </div>
-
-    </div>
-
-    </>
-  );
 }

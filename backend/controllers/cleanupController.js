@@ -1,4 +1,3 @@
-const cleanupTask = require("../models/cleanupTask");
 const CleanupTask = require("../models/cleanupTask");
 const cloudinary = require("../utils/cloudinary.js");
 
@@ -795,6 +794,39 @@ const releaseCleanupTask = async (req, res) => {
         });
     }
 };
+const getGovernmentStats = async (req, res) => {
+    try {
+        // Get logged-in officer ID from authentication middleware
+        const officerId = req.user.id;
+
+        const [totalReportsReviewed, totalTasksPublished] = await Promise.all([
+            Report.countDocuments({
+                reviewedBy: officerId,
+            }),
+
+            CleanupTask.countDocuments({
+                createdBy: officerId,
+            }),
+        ]);
+
+        return res.status(200).json({
+            success: true,
+            message: "Government statistics fetched successfully",
+
+            stats: {
+                totalReportsReviewed,
+                totalTasksPublished,
+            },
+        });
+    } catch (error) {
+        console.error("Government statistics error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch government statistics",
+        });
+    }
+};
 module.exports = {
     updateReportStatus,
     createCleanupTask,
@@ -811,4 +843,5 @@ module.exports = {
     rejectCleanuptask,
     releaseCleanupTask,
     sendTaskForManualReview,
+    getGovernmentStats,
 };

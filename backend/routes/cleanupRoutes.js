@@ -18,6 +18,7 @@ const {
     rejectCleanuptask,
     releaseCleanupTask,
     sendTaskForManualReview,
+    getGovernmentStats,
 } = require("../controllers/cleanupController");
 const {verifyToken} = require("../middleware/authMiddleware");
 router.patch("/reports/:id/status", verifyToken, updateReportStatus);
@@ -56,4 +57,5 @@ router.patch("/:id/manual-review", verifyToken, authorizeRoles("government"), se
 router.patch("/:id/reject-cleanup-task", verifyToken, authorizeRoles("government"), rejectCleanuptask);
 
 router.patch("/:id/release-cleanup-task", verifyToken, authorizeRoles("citizen"), releaseCleanupTask);
+router.get("/govt-officer-stats", verifyToken, authorizeRoles("government"), getGovernmentStats);
 module.exports = router;

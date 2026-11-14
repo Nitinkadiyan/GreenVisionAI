@@ -19,100 +19,61 @@ import MyCleanupTask from "./MyCleanuptask.jsx";
 
 export default function UserDashboard() {
     const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
 
-    // Existing dashboard state
-    const initialView = searchParams.get("view") || "dashboard";
+    // Dashboard state
+    const [view, setView] = useState(searchParams.get("view") || "dashboard");
 
-    const [view, setView] = useState(initialView);
     const [reportsOpen, setReportsOpen] = useState(true);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [logout, setLogout] = useState(false);
     const [query, setQuery] = useState("");
     const [selectedReport, setSelectedReport] = useState(null);
 
-    const navigate = useNavigate();
-
+    // Data state
     const [user, setUser] = useState(null);
     const [reports, setReports] = useState([]);
     const [reportsLoading, setReportsLoading] = useState(true);
     const [reportsError, setReportsError] = useState("");
 
-    // Navigate to ReportsView with a selected filter
+    // Open reports with a particular filter
     const onOpenReports = (filter = "All") => {
         setSearchParams({
             view: "reports",
-            filter: filter,
+            filter,
         });
 
         setView("reports");
     };
 
-    fetchReports();
-  }, []);
+    // Keep URL synchronized with dashboard navigation
+    useEffect(() => {
+        const urlView = searchParams.get("view");
 
-  const getUserProfile = async (req, res) => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:5001/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      console.log(response);
-      console.log(response.data.user);
-      setUser(response.data.user);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-  useEffect(() => {
-    getUserProfile();
-  }, []);
-  const handleLogout = async () => {
-    console.log("logout function started");
-    try {
-      localStorage.removeItem("token");
-    } catch (error) {
-      console.log(error);
-    } finally {
-      navigate("/login");
-    }
-  };
-  const content =
-    view === "dashboard" ? (
-      <Dashboard2
-  setView={setView}
-  query={query}
-  reports={reports}
-  setSelectedReport={setSelectedReport}
-/>
-    ) : view === "reports" ? (
-      <ReportsView
-        setView={setView}
-        query={query}
-        setQuery={setQuery}
-        setSelectedReport={setSelectedReport}
-        reports={reports}
-        reportsLoading={reportsLoading}
-        reportsError={reportsError}
-      />
-    ) : view === "reportDetail" ? (
-      <ReportDetail setView={setView} report={selectedReport} />
-    ) : view === "volunteer" || view === "tasks" ? (
-      <VolunteerView />
-    ) : view === "map" ? (
-      <MapView
-        setView={setView}
-        reports={reports}
-        setSelectedReport={setSelectedReport}
-      />
-    ) : view === "notifications" ? (
-      <NotificationsView />
-    ) : view === "profile" ? (
-      <ProfileView setLogout={setLogout} user={user} setUser={setUser} setView={setView}/>
-    ) : (
-      <ContributionView user={user} />
-    );
+        if (urlView) {
+            setView(urlView);
+        }
+    }, [searchParams]);
+
+    // Fetch reports
+    useEffect(() => {
+        const fetchReports = async () => {
+            try {
+                setReportsLoading(true);
+                setReportsError("");
+
+                const token = localStorage.getItem("token");
+
+                if (!token) {
+                    navigate("/login");
+                    return;
+                }
+
+                const response = await axios.get("http://localhost:5001/reports/my-reports", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
 
                 setReports(Array.isArray(response.data.reports) ? response.data.reports : []);
             } catch (error) {
@@ -125,15 +86,18 @@ export default function UserDashboard() {
         };
 
         fetchReports();
-    }, []);
+    }, [navigate]);
 
-    // Fetch user profile
+    // Fetch logged-in user's profile
     useEffect(() => {
         const getUserProfile = async () => {
             try {
                 const token = localStorage.getItem("token");
 
-                if (!token) return;
+                if (!token) {
+                    navigate("/login");
+                    return;
+                }
 
                 const response = await axios.get("http://localhost:5001/me", {
                     headers: {
@@ -146,11 +110,16 @@ export default function UserDashboard() {
                 setUser(response.data.user);
             } catch (error) {
                 console.error("Error fetching user profile:", error);
+
+                if (error.response?.status === 401) {
+                    localStorage.removeItem("token");
+                    navigate("/login");
+                }
             }
         };
 
         getUserProfile();
-    }, []);
+    }, [navigate]);
 
     // Logout
     const handleLogout = () => {
@@ -177,7 +146,7 @@ export default function UserDashboard() {
         };
     }, [reports]);
 
-    // Render the selected component
+    // Render selected dashboard section
     const content =
         view === "dashboard" ? (
             <Dashboard2
