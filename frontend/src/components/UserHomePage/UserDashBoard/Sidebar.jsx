@@ -57,7 +57,7 @@ export default function Sidebar({
         "In Progress",
         "Completed",
     ];
-
+  console.log("Sidebar user:", user);
     return (
         <>
             {mobileOpen && (
@@ -229,7 +229,7 @@ export default function Sidebar({
                         <span className="flex-1">
                             <span className="block text-xs font-bold text-slate-700">My Contribution</span>
 
-                            <span className="block text-xs text-amber-700">{user?.volunteer?.points ?? 0} Stars</span>
+                            <span className="block text-xs text-amber-700">{user?.volunteerProfile?.points ?? 0} Stars</span>
                         </span>
 
                         <ChevronRight size={15} className="text-amber-500" />

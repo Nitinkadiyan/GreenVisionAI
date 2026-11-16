@@ -2,7 +2,6 @@
 import axios from "axios";
 import {useMemo, useState, useEffect, useRef} from "react";
 import {MapContainer, TileLayer, Marker, Popup} from "react-leaflet";
-import TaskModal from "./TaskModal";
 import ReportModal from "./ReportModal";
 import Dashboard from "./Dashboard";
 import Profile from "./Profile";
@@ -101,7 +100,6 @@ export default function governmentDashboard() {
     const [search, setSearch] = useState("");
     const [reportTab, setReportTab] = useState("All");
     const [selectedReport, setSelectedReport] = useState(null);
-    const [taskModal, setTaskModal] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const [readAll, setReadAll] = useState(false);
     const [toast, setToast] = useState("");
@@ -197,7 +195,7 @@ export default function governmentDashboard() {
     useEffect(() => {
         getVolunteers();
     }, []);
-    
+
     const getUserProfile = async (req, res) => {
         try {
             const token = localStorage.getItem("token");
@@ -219,54 +217,6 @@ export default function governmentDashboard() {
                 setProfileOpen(false);
             }
         };
-      });
-      // console.log(response);
-      // console.log(response.data.user);
-      setProfile(response.data.user);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-  useEffect(() => {
-    getUserProfile();
-  }, []);
-  const handleLogout = async () => {
-    console.log("logout function started");
-    try {
-      localStorage.removeItem("token");
-      window.dispatchEvent(new Event("auth:changed"));
-navigate("/login");
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setTimeout(showToast("Logged Out Successfully"), 2000);
-      navigate("/login");
-    }
-  };
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      showToast("Please Login First");
-      return;
-    }
-    getAllReports();
-    getAllCleanups();
-  }, []);
-  const getAllCleanups = async () => {
-    // console.log("nikku doing work");
-    const token = localStorage.getItem("token");
-    const response = await axios.get(
-      "http://localhost:5001/volunteer/clean-up-tasks",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    );
-    // console.log("FULL Cleanup Response:", response.data.cleanupTasks);
-    setCleanupTasks(response.data.cleanupTasks || []);
-  };
 
         document.addEventListener("mousedown", handleClickOutside);
 
@@ -361,23 +311,6 @@ navigate("/login");
     const chooseNav = (id) => {
         setActive(id);
         setMobileOpen(false);
-    };
-    const createCleanupTask = async (taskData) => {
-        try {
-            console.log("Post request starting");
-            const token = localStorage.getItem("token");
-            const response = await axios.post("http://localhost:5001/volunteer/create-cleanup-task", taskData, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            // console.log(response);
-            console.log("Task Created :", response.data);
-            return response.data;
-        } catch (error) {
-            console.error("Error creating cleanup task:", error.response?.data || error);
-            throw error;
-        }
     };
     const approveReport = async (reportId) => {
         try {
@@ -573,6 +506,7 @@ navigate("/login");
                             cleanupTasks={cleanupTasks}
                             reports={reportState}
                             setReportTab={setReportTab}
+                            volunteers={volunteers}
                         />
                     )}
                     {active === "settings" && (
@@ -601,7 +535,7 @@ navigate("/login");
                             formatDate={formatDate}
                             onTask={(report) => {
                                 setSelectedReport(report);
-                                setTaskModal(true);
+                                chooseNav("tasks");
                             }}
                         />
                     )}
@@ -609,8 +543,9 @@ navigate("/login");
                     {active === "tasks" && (
                         <Tasks
                             cleanupTasks={cleanupTasks}
-                            onCreate={() => setTaskModal(true)}
                             onRefresh={getAllCleanups}
+                            report={selectedReport}
+                            onReportConsumed={() => setSelectedReport(null)}
                         />
                     )}
                     {active == "map" && (
@@ -631,33 +566,17 @@ navigate("/login");
                     className="fixed inset-0 z-30 bg-slate-950/25 lg:hidden"
                 />
             )}
-            {selectedReport && !taskModal && (
+            {selectedReport && active === "reports" && (
                 <ReportModal
                     report={selectedReport}
                     formatDate={formatDate}
                     onClose={() => setSelectedReport(null)}
                     onReject={rejectReport}
-                    onTask={() => setTaskModal(true)}
+                    onTask={() => chooseNav("tasks")}
                     onApprove={approveReport}
                     onAction={(message) => {
                         setSelectedReport(null);
                         showToast(message);
-                    }}
-                />
-            )}
-            {taskModal && (
-                <TaskModal
-                    report={selectedReport}
-                    onClose={() => {
-                        setTaskModal(false);
-                        setSelectedReport(null);
-                    }}
-                    onCreate={createCleanupTask}
-                    onCreated={async () => {
-                        await getAllCleanups();
-                        setTaskModal(false);
-                        setSelectedReport(null);
-                        showToast("Cleanup task created successfully");
                     }}
                 />
             )}

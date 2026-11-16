@@ -2,10 +2,18 @@ const mongoose = require("mongoose");
 
 const cleanupTaskSchema = new mongoose.Schema(
     {
+        // Report associated with this cleanup task
         report: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Report",
             required: true,
+            unique: true,
+        },
+
+        // Government officer who created/published this task
+        createdBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
         },
 
         reward: {
@@ -42,6 +50,7 @@ const cleanupTaskSchema = new mongoose.Schema(
             default: "Available",
         },
 
+        // Volunteer assigned to this cleanup task
         volunteer: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",

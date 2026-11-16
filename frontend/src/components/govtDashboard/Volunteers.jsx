@@ -8,11 +8,11 @@ import Badge from "./Badge";
 
 const getStatusTone = (status) => {
     switch (status) {
-        case "available":
+        case "Available":
             return "green";
-        case "working":
+        case "Working":
             return "blue";
-        case "under-review":
+        case "Under-Review":
             return "amber";
         default:
             return "slate";
@@ -38,7 +38,7 @@ export default function Volunteers({data = [], filter = "All", setFilter, onSele
         let result = [...volunteers];
 
         if (filter === "Active") {
-            result = result.filter((user) => ["available", "working"].includes(user.volunteerProfile?.status));
+            result = result.filter((user) => ["Available", "Working"].includes(user.volunteerProfile?.status));
         }
 
         if (filter === "Top contributors") {

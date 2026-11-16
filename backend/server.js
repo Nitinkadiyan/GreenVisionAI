@@ -14,13 +14,6 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cookieParser());
-const reportRoutes = require("./routes/reportRoutes.js");
-const governmentRoutes = require("./routes/GovernmentRoutes.js");
-const cleanupRoutes = require("./routes/cleanupRoutes.js");
-const analyzeRoute = require("./routes/visionRoutes.js");
-const volunteerRoutes = require("./routes/volunteerRoutes.js");
-const rewardRoutes = require("./routes/rewardRoutes.js");
-connectDb();
 
 app.use(
     cors({
@@ -31,14 +24,27 @@ app.use(
 );
 
 // Routes
-const authRoutes = require("./routes/authRoutes");
 const reportRoutes = require("./routes/reportRoutes.js");
 const governmentRoutes = require("./routes/GovernmentRoutes.js");
 const cleanupRoutes = require("./routes/cleanupRoutes.js");
 const analyzeRoute = require("./routes/visionRoutes.js");
 const volunteerRoutes = require("./routes/volunteerRoutes.js");
-const { initializeSocket } = require("./sockets/socket.js");
+const rewardRoutes = require("./routes/rewardRoutes.js");
+const authRoutes = require("./routes/authRoutes.js");
 
+// Socket.IO
+const {initializeSocket} = require("./sockets/socket.js");
+
+// Create HTTP server ONLY ONCE
+const server = http.createServer(app);
+
+// Initialize Socket.IO on the same HTTP server
+const io = initializeSocket(server);
+
+// Make Socket.IO accessible inside controllers
+app.set("io", io);
+
+// Register routes
 app.use("/", authRoutes);
 app.use("/government", governmentRoutes);
 app.use("/reports", reportRoutes);
@@ -46,33 +52,27 @@ app.use("/analyzeReport", analyzeRoute);
 app.use("/volunteer", cleanupRoutes);
 app.use("/volunteerProfile", volunteerRoutes);
 app.use("/rewards", rewardRoutes);
-app.listen(process.env.PORT, () => {
-    console.log(`Server is listening on port ${process.env.PORT}`);
-});
-
-// Create HTTP server
-const server = http.createServer(app);
-
-// Initialize Socket.IO
-const io = initializeSocket(server);
-
-// Make io accessible to Express controllers/services later
-app.set("io", io);
 
 // Start application
 const startServer = async () => {
-  try {
-    await connectDb();
+    try {
+        // Connect to MongoDB only once
+        await connectDb();
 
-    const PORT = process.env.PORT || 5001;
+        const PORT = process.env.PORT || 5001;
 
-    server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error("Server startup failed:", error.message);
-    process.exit(1);
-  }
+        server.listen(PORT, () => {
+            console.log("----------------------------------");
+            console.log("GreenVision AI Backend Started");
+            console.log(`Server running on port ${PORT}`);
+            console.log("Socket.IO initialized successfully");
+            console.log("MongoDB connected successfully");
+            console.log("----------------------------------");
+        });
+    } catch (error) {
+        console.error("Server startup failed:", error.message);
+        process.exit(1);
+    }
 };
 
 startServer();

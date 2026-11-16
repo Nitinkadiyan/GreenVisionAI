@@ -8,7 +8,7 @@ const {authorizeRoles} = require("../middleware/authorizeRole.js");
 
 router.get("/stats", verifyToken, authorizeRoles("government"), getRewardStats);
 
-router.get("/leaderboard", verifyToken, authorizeRoles("government"), getLeaderboard);
+router.get("/leaderboard", verifyToken, getLeaderboard);
 
 router.get("/volunteer/:volunteerId", verifyToken, authorizeRoles("government"), getVolunteerRewards);
 router.get("/my-rewards", verifyToken, getMyRewards);
