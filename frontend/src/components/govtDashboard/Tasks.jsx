@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import Badge from "./Badge";
+import TaskModal from "./TaskModal";
 import statusTone from "./statusTone";
 
 const API_BASE = "http://localhost:5001/volunteer";
@@ -619,13 +620,21 @@ function TaskReviewModal({task, onClose, onAction, loading}) {
     );
 }
 
-export default function Tasks({onCreate, cleanupTasks = [], onRefresh}) {
+export default function Tasks({cleanupTasks = [], onRefresh, report = null, onReportConsumed}) {
     const [taskFilter, setTaskFilter] = useState("All");
     const [selectedTask, setSelectedTask] = useState(null);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [localTasks, setLocalTasks] = useState(cleanupTasks);
     const [error, setError] = useState("");
+    const [createModalOpen, setCreateModalOpen] = useState(false);
+    const [creatingTask, setCreatingTask] = useState(false);
+
+    // When a government officer chooses "Create task" from a report,
+    // open this component's modal with that report preselected.
+    useEffect(() => {
+        if (report?._id) setCreateModalOpen(true);
+    }, [report?._id]);
 
     useEffect(() => {
         setLocalTasks(cleanupTasks || []);
@@ -645,6 +654,60 @@ export default function Tasks({onCreate, cleanupTasks = [], onRefresh}) {
         } finally {
             setRefreshing(false);
         }
+    };
+
+    const handleCreateTask = async (taskData) => {
+        if (creatingTask) return;
+
+        const token =
+            localStorage.getItem("token") || localStorage.getItem("accessToken") || localStorage.getItem("authToken");
+
+        if (!token) {
+            throw new Error("Your session has expired. Please log in again.");
+        }
+
+        try {
+            setCreatingTask(true);
+            setError("");
+
+            const response = await axios.post(`${API_BASE}/create-cleanup-task`, taskData, {
+                ...getAuthConfig(),
+                headers: {
+                    ...getAuthConfig().headers,
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            return response.data;
+        } catch (err) {
+            console.error("Cleanup task creation failed:", err.response?.data || err);
+            throw new Error(
+                err.response?.data?.message || err.message || "Unable to create cleanup task. Please try again."
+            );
+        } finally {
+            setCreatingTask(false);
+        }
+    };
+
+    const handleTaskCreated = async () => {
+        try {
+            if (onRefresh) await onRefresh();
+            setCreateModalOpen(false);
+            onReportConsumed?.();
+            setError("");
+            alert("Cleanup task created successfully.");
+        } catch (err) {
+            console.error("Task was created, but refreshing the task list failed:", err);
+            setError("The task was created, but the list could not be refreshed. Use Refresh to reload it.");
+            setCreateModalOpen(false);
+            onReportConsumed?.();
+        }
+    };
+
+    const closeCreateModal = () => {
+        if (creatingTask) return;
+        setCreateModalOpen(false);
+        onReportConsumed?.();
     };
 
     const handleTaskAction = async (action, taskId, reason = "") => {
@@ -736,7 +799,7 @@ export default function Tasks({onCreate, cleanupTasks = [], onRefresh}) {
                     </button>
 
                     <button
-                        onClick={onCreate}
+                        onClick={() => setCreateModalOpen(true)}
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#087f5b] px-4 text-xs font-bold text-white shadow-md shadow-emerald-900/10 transition hover:-translate-y-0.5 hover:bg-[#056b4d]"
                     >
                         <Plus size={16} />
@@ -939,6 +1002,17 @@ export default function Tasks({onCreate, cleanupTasks = [], onRefresh}) {
                     )}
                 </div>
             </div>
+
+            {/* Cleanup task creation is owned by this component. */}
+            {createModalOpen && (
+                <TaskModal
+                    report={report}
+                    onClose={closeCreateModal}
+                    onCreate={handleCreateTask}
+                    onCreated={handleTaskCreated}
+                    loading={creatingTask}
+                />
+            )}
 
             {/* Review modal */}
             {selectedTask && (

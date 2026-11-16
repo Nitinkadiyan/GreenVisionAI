@@ -7,6 +7,7 @@ const cleanupTaskSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Report",
             required: true,
+            unique: true,
         },
 
         // Government officer who created/published this task

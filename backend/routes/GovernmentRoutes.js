@@ -13,7 +13,7 @@ const {
   reportAnalytics,
   assignReport,
   updateReportStatus,
-} = require("../controllers/governmemtController.js");
+} = require("../controllers/governmentController.js");
 const { verifyToken } = require("../middleware/authMiddleware.js");
 
 router.get("/get-all-reports", verifyToken, governmentAuth, getAllGovReports);

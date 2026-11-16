@@ -26,7 +26,6 @@ router.post("/create-cleanup-task", verifyToken, authorizeRoles("government"), c
 router.get(
     "/clean-up-tasks",
     verifyToken,
-
     getCleanuptasks
 );
 router.get("/landing-page-tasks", getLandingPageTasks);

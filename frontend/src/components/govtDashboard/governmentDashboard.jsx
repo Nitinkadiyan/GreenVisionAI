@@ -2,7 +2,6 @@
 import axios from "axios";
 import {useMemo, useState, useEffect, useRef} from "react";
 import {MapContainer, TileLayer, Marker, Popup} from "react-leaflet";
-import TaskModal from "./TaskModal";
 import ReportModal from "./ReportModal";
 import Dashboard from "./Dashboard";
 import Profile from "./Profile";
@@ -101,7 +100,6 @@ export default function governmentDashboard() {
     const [search, setSearch] = useState("");
     const [reportTab, setReportTab] = useState("All");
     const [selectedReport, setSelectedReport] = useState(null);
-    const [taskModal, setTaskModal] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const [readAll, setReadAll] = useState(false);
     const [toast, setToast] = useState("");
@@ -314,23 +312,6 @@ export default function governmentDashboard() {
         setActive(id);
         setMobileOpen(false);
     };
-    const createCleanupTask = async (taskData) => {
-        try {
-            console.log("Post request starting");
-            const token = localStorage.getItem("token");
-            const response = await axios.post("http://localhost:5001/volunteer/create-cleanup-task", taskData, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            // console.log(response);
-            console.log("Task Created :", response.data);
-            return response.data;
-        } catch (error) {
-            console.error("Error creating cleanup task:", error.response?.data || error);
-            throw error;
-        }
-    };
     const approveReport = async (reportId) => {
         try {
             const token = localStorage.getItem("token");
@@ -525,6 +506,7 @@ export default function governmentDashboard() {
                             cleanupTasks={cleanupTasks}
                             reports={reportState}
                             setReportTab={setReportTab}
+                            volunteers={volunteers}
                         />
                     )}
                     {active === "settings" && (
@@ -553,7 +535,7 @@ export default function governmentDashboard() {
                             formatDate={formatDate}
                             onTask={(report) => {
                                 setSelectedReport(report);
-                                setTaskModal(true);
+                                chooseNav("tasks");
                             }}
                         />
                     )}
@@ -561,8 +543,9 @@ export default function governmentDashboard() {
                     {active === "tasks" && (
                         <Tasks
                             cleanupTasks={cleanupTasks}
-                            onCreate={() => setTaskModal(true)}
                             onRefresh={getAllCleanups}
+                            report={selectedReport}
+                            onReportConsumed={() => setSelectedReport(null)}
                         />
                     )}
                     {active == "map" && (
@@ -583,33 +566,17 @@ export default function governmentDashboard() {
                     className="fixed inset-0 z-30 bg-slate-950/25 lg:hidden"
                 />
             )}
-            {selectedReport && !taskModal && (
+            {selectedReport && active === "reports" && (
                 <ReportModal
                     report={selectedReport}
                     formatDate={formatDate}
                     onClose={() => setSelectedReport(null)}
                     onReject={rejectReport}
-                    onTask={() => setTaskModal(true)}
+                    onTask={() => chooseNav("tasks")}
                     onApprove={approveReport}
                     onAction={(message) => {
                         setSelectedReport(null);
                         showToast(message);
-                    }}
-                />
-            )}
-            {taskModal && (
-                <TaskModal
-                    report={selectedReport}
-                    onClose={() => {
-                        setTaskModal(false);
-                        setSelectedReport(null);
-                    }}
-                    onCreate={createCleanupTask}
-                    onCreated={async () => {
-                        await getAllCleanups();
-                        setTaskModal(false);
-                        setSelectedReport(null);
-                        showToast("Cleanup task created successfully");
                     }}
                 />
             )}

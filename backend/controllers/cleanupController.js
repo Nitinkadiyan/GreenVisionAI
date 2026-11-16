@@ -47,6 +47,16 @@ const createCleanupTask = async (req, res) => {
                 message: "Report not found",
             });
         }
+        const existingTask = await CleanupTask.findOne({report});
+
+        if (existingTask) {
+            return res.status(409).json({
+                success: false,
+                message: "A cleanup task already exists for this report.",
+                existingTask,
+            });
+        }
+
         if (existingReport.status !== "Approved") {
             return res.status(400).json({
                 success: false,
@@ -313,12 +323,12 @@ const acceptCleanupTask = async (req, res) => {
                     rewardsRedeemed: 0,
                     totalPointsEarned: 0,
                     currentTask: null,
-                    status: "working",
+                    status: "Working",
                 };
             } else {
                 user.volunteerProfile.tasksAccepted = (user.volunteerProfile.tasksAccepted || 0) + 1;
 
-                user.volunteerProfile.status = "working";
+                user.volunteerProfile.status = "Working";
 
                 // Keep null because multiple active tasks are supported.
                 user.volunteerProfile.currentTask = null;
@@ -466,7 +476,7 @@ const submitCleanupCompletion = async (req, res) => {
             });
         }
 
-        // 7. Original report image becomes the before image
+        // 7. Get original report image
         const beforeImage = report.imageUrl;
         const beforeImagePublicId = report.imagePublicId;
 
@@ -488,21 +498,19 @@ const submitCleanupCompletion = async (req, res) => {
         const afterImageUrl = afterImageUploaded.secure_url;
         const afterImagePublicId = afterImageUploaded.public_id;
 
-        // 9. Get original report AI analysis
-        const analysis = report.aiAnalysis;
-
-        // 10. Run AI cleanup verification
-
+        // 9. Run AI cleanup verification
         const aiResult = await analyzeCleanup({
             beforeImage,
             afterImage: afterImageUrl,
             description: description.trim(),
             analysis: report.aiAnalysis,
         });
+
         if (!aiResult || typeof aiResult.verified !== "boolean") {
             throw new Error("Invalid AI verification response");
         }
-        // 11. Prepare AI verification data
+
+        // 10. Prepare AI verification data
         const aiVerification = {
             verified: aiResult.verified,
             confidence: aiResult.confidence,
@@ -516,7 +524,7 @@ const submitCleanupCompletion = async (req, res) => {
             verifiedAt: aiResult.verifiedAt || new Date(),
         };
 
-        // 12. Save completion evidence
+        // 11. Save completion evidence
         cleanupTask.completion.beforeImageUrl = beforeImage;
         cleanupTask.completion.beforeImagePublicId = beforeImagePublicId || null;
 
@@ -531,25 +539,50 @@ const submitCleanupCompletion = async (req, res) => {
 
         cleanupTask.completion.submittedAt = new Date();
 
-        // 13. Save AI verification inside CleanupTask
+        // 12. Save AI verification
         cleanupTask.completion.aiVerification = aiVerification;
 
-        // 14. Update task status
+        // 13. Update task status
         cleanupTask.status = "Completion-Submitted";
 
-        // 15. Persist everything in MongoDB
         await cleanupTask.save();
 
-        // 16. Send response
+        // 14. Fetch volunteer
+        const volunteer = await User.findById(req.user.id);
+
+        if (!volunteer || !volunteer.volunteerProfile) {
+            throw new Error("Volunteer profile not found");
+        }
+
+        // 15. Check whether another active task exists
+        const anotherActiveTask = await CleanupTask.findOne({
+            volunteer: req.user.id,
+            status: {
+                $nin: ["Completion-Submitted", "Under-Review", "Completed", "Rejected", "Cancelled"],
+            },
+            _id: {$ne: cleanupTask._id},
+        });
+
+        // 16. Update volunteer status
+        if (anotherActiveTask) {
+            volunteer.volunteerProfile.status = "Working";
+        } else {
+            volunteer.volunteerProfile.status = "Under-Review";
+        }
+
+        await volunteer.save();
+
+        // 17. Return response
         return res.status(200).json({
             success: true,
             message: "Cleanup completion submitted successfully",
             cleanupTask,
+            volunteerStatus: volunteer.volunteerProfile.status,
         });
     } catch (error) {
         console.error("Cleanup completion submission error:", error);
 
-        // Remove uploaded Cloudinary image if processing or saving fails
+        // 18. Remove uploaded image if processing or saving fails
         if (uploadedAfterImagePublicId) {
             try {
                 await cloudinary.uploader.destroy(uploadedAfterImagePublicId);
@@ -563,10 +596,6 @@ const submitCleanupCompletion = async (req, res) => {
             message: error.message || "Failed to submit cleanup completion",
         });
     }
-};
-
-module.exports = {
-    submitCleanupCompletion,
 };
 
 const UnderReviewTask = async (req, res) => {
@@ -594,55 +623,147 @@ const UnderReviewTask = async (req, res) => {
 };
 
 const completeCleanupTask = async (req, res) => {
+    const session = await mongoose.startSession();
+
     try {
         const {id} = req.params;
         const {reason} = req.body;
 
-        const task = await CleanupTask.findOneAndUpdate(
-            {
-                _id: id,
-                status: {
-                    $in: ["Completion-Submitted", "Under-Review"],
-                },
-            },
-            {
-                $set: {
-                    status: "Completed",
+        const officerId = req.user?.id || req.user?._id;
 
-                    "completion.reviewDecision": "Approved",
-                    "completion.reviewReason": reason || null,
-                    "completion.reviewedAt": new Date(),
-                    "completion.reviewedBy": req.user?._id || req.user?.id || null,
-                },
-            },
-            {
-                new: true,
-                runValidators: true,
-            }
-        )
-        .populate("report")
-        .populate("volunteer", "name email")
-        .populate("completion.reviewedBy", "name email");
-
-        if (!task) {
-            return res.status(400).json({
+        if (!officerId) {
+            return res.status(401).json({
                 success: false,
-                message: "Task not found or it has already been reviewed.",
+                message: "Unauthorized",
             });
         }
+
+        let approvedTaskId = null;
+
+        await session.withTransaction(async () => {
+            // 1. Approve the cleanup task.
+            // This condition prevents duplicate reward crediting.
+            const task = await CleanupTask.findOneAndUpdate(
+                {
+                    _id: id,
+                    status: {
+                        $in: ["Completion-Submitted", "Under-Review"],
+                    },
+                },
+                {
+                    $set: {
+                        status: "Completed",
+                        "completion.reviewDecision": "Approved",
+                        "completion.reviewReason": reason || null,
+                        "completion.reviewedAt": new Date(),
+                        "completion.reviewedBy": officerId,
+                    },
+                },
+                {
+                    new: true,
+                    runValidators: true,
+                    session,
+                }
+            );
+
+            if (!task) {
+                const error = new Error("Task not found or it has already been reviewed.");
+                error.statusCode = 400;
+                throw error;
+            }
+
+            approvedTaskId = task._id;
+
+            // 2. Get assigned volunteer
+            if (!task.volunteer) {
+                const error = new Error("No volunteer is assigned to this task.");
+                error.statusCode = 400;
+                throw error;
+            }
+
+            const volunteer = await User.findById(task.volunteer).session(session);
+
+            if (!volunteer || !volunteer.volunteerProfile) {
+                const error = new Error("Volunteer profile not found.");
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const profile = volunteer.volunteerProfile;
+
+            // 3. Get cleanup task reward
+            const rewardAmount = Number(task.reward?.amount);
+
+            if (!Number.isFinite(rewardAmount) || rewardAmount < 0) {
+                throw new Error("Invalid cleanup task reward.");
+            }
+
+            // 4. Add reward points
+            profile.points = (profile.points || 0) + rewardAmount;
+
+            profile.totalPointsEarned = (profile.totalPointsEarned || 0) + rewardAmount;
+
+            // 5. Increment completed tasks
+            profile.tasksCompleted = (profile.tasksCompleted || 0) + 1;
+
+            // 6. Calculate completion percentage
+            const tasksAccepted = profile.tasksAccepted || 0;
+
+            profile.completionPercentage =
+                tasksAccepted > 0 ? Math.min(100, Math.round((profile.tasksCompleted / tasksAccepted) * 100)) : 0;
+
+            // 7. Find all other tasks belonging to this volunteer
+            const otherTasks = await CleanupTask.find({
+                volunteer: task.volunteer,
+                _id: {$ne: task._id},
+            })
+            .select("_id status")
+            .session(session);
+
+            // 8. Check for another active task
+            const activeTask = otherTasks.find((otherTask) => ["Assigned", "In-Progress"].includes(otherTask.status));
+
+            // 9. Check for another task awaiting government review
+            const pendingReviewTask = otherTasks.find((otherTask) =>
+                ["Completion-Submitted", "Under-Review"].includes(otherTask.status)
+            );
+
+            // 10. Update volunteer status and current task
+            if (activeTask) {
+                profile.status = "Working";
+                profile.currentTask = activeTask._id;
+            } else if (pendingReviewTask) {
+                profile.status = "Under-Review";
+                profile.currentTask = null;
+            } else {
+                profile.status = "Available";
+                profile.currentTask = null;
+            }
+
+            // 11. Save volunteer profile
+            await volunteer.save({session});
+        });
+
+        // 12. Fetch updated task with populated details
+        const updatedTask = await CleanupTask.findById(approvedTaskId)
+        .populate("report")
+        .populate("volunteer", "name email volunteerProfile")
+        .populate("completion.reviewedBy", "name email");
 
         return res.status(200).json({
             success: true,
             message: "Cleanup task approved successfully.",
-            task,
+            task: updatedTask,
         });
     } catch (error) {
         console.error("completeCleanupTask error:", error);
 
-        return res.status(500).json({
+        return res.status(error.statusCode || 500).json({
             success: false,
-            message: error.message,
+            message: error.message || "Failed to approve cleanup task.",
         });
+    } finally {
+        await session.endSession();
     }
 };
 
@@ -758,9 +879,11 @@ const releaseCleanupTask = async (req, res) => {
                 message: "Cleanup task not found",
             });
         }
-
+        console.log("cleanupTask.volunteer:", cleanupTask.volunteer);
+        console.log("string cleanupTask.volunteer:", cleanupTask.volunteer?.toString());
+        console.log("req.user.id:", req.user.id);
         // Only the assigned volunteer can release the task
-        if (!cleanupTask.volunteer || cleanupTask.volunteer.toString() !== req.user.id) {
+        if (!cleanupTask.volunteer || cleanupTask.volunteer.toString() !== req.user.id.toString()) {
             return res.status(403).json({
                 success: false,
                 message: "You are not assigned this task",

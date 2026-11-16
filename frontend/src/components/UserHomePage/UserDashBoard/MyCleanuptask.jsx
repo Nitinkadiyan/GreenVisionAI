@@ -186,7 +186,7 @@ export default function MyCleanupTask({user}) {
             setReleasingId(id);
 
             await axios.patch(
-                `${API}/${id}/release`,
+                `${API}/${id}/release-cleanup-task`,
                 {},
                 {
                     headers: {

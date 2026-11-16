@@ -7,10 +7,11 @@ import {
     Users,
     Sparkles,
     Target,
+    CalendarDays,
+    AlertTriangle,  
     TrendingUp,
     Clock3,
     ChevronRight,
-    ArrowUpDown,
     X,
     Mail,
     Phone,
@@ -105,18 +106,23 @@ function DetailItem({icon: Icon, label, value}) {
             <Icon size={17} className="mt-0.5 shrink-0 text-slate-400" />
             <div className="min-w-0">
                 <p className="text-xs text-slate-400">{label}</p>
-                <p className="mt-1 break-words text-sm font-semibold text-slate-700">{value ?? "Not adhbjhvailable"}</p>
+                <p className="mt-1 break-words text-sm font-semibold text-slate-700">{value ?? "Not available"}</p>
             </div>
         </div>
     );
 }
 
+
 function VolunteerProfile({volunteer}) {
-    const currentTask = volunteer.currentTask;
+    console.log("Rendering VolunteerProfile for:", volunteer);
+
+    const cleanupTasks = Array.isArray(volunteer?.cleanupTasks) ? volunteer.cleanupTasks : [];
+
     const completionRate = getCompletionRate(volunteer);
 
     return (
         <div className="space-y-5">
+            {/* Volunteer information */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <img
                     src={getVolunteerImage(volunteer)}
@@ -126,13 +132,16 @@ function VolunteerProfile({volunteer}) {
 
                 <div className="flex-1">
                     <h3 className="text-xl font-bold text-slate-900">{getVolunteerName(volunteer)}</h3>
+
                     <p className="mt-1 text-sm text-slate-500">{getVolunteerEmail(volunteer)}</p>
+
                     <div className="mt-2">
                         <Badge tone={getStatusColor(volunteer?.status)}>{volunteer?.status || "Unknown"}</Badge>
                     </div>
                 </div>
             </div>
 
+            {/* Statistics */}
             <div className="grid gap-3 sm:grid-cols-3">
                 {[
                     {
@@ -153,67 +162,131 @@ function VolunteerProfile({volunteer}) {
                 ].map((item) => (
                     <div key={item.label} className="rounded-xl border border-slate-100 p-4">
                         <item.icon size={18} className="text-emerald-600" />
+
                         <p className="mt-3 text-xl font-bold text-slate-900">{formatNumber(item.value)}</p>
+
                         <p className="mt-1 text-xs text-slate-500">{item.label}</p>
                     </div>
                 ))}
             </div>
 
+            {/* Contact and account information */}
             <div>
                 <h4 className="mb-3 font-semibold text-slate-800">Contact and account information</h4>
 
                 <div className="grid gap-3 sm:grid-cols-2">
                     <DetailItem icon={Mail} label="Email" value={getVolunteerEmail(volunteer)} />
+
                     <DetailItem icon={Phone} label="Phone" value={getVolunteerPhone(volunteer)} />
+
                     <DetailItem icon={MapPin} label="Location" value={getVolunteerLocation(volunteer)} />
+
                     <DetailItem
                         icon={Award}
                         label="Lifetime points earned"
                         value={formatNumber(volunteer.totalPointsEarned)}
                     />
+
                     <DetailItem
                         icon={ClipboardList}
                         label="Tasks accepted"
                         value={formatNumber(volunteer.tasksAccepted)}
                     />
+
                     <DetailItem icon={Gift} label="Rewards redeemed" value={formatNumber(volunteer.rewardsRedeemed)} />
-                    <DetailItem
-                        icon={Activity}
-                        label="Reports worked on"
-                        value={formatNumber(volunteer.totalReportsWorked)}
-                    />
+
+                    <DetailItem icon={Activity} label="Regional Rank" value={formatNumber(volunteer.rank)} />
+
                     <DetailItem icon={UserRound} label="Volunteer ID" value={volunteer._id} />
                 </div>
             </div>
 
+            {/* Cleanup tasks */}
             <div>
-                <h4 className="mb-3 font-semibold text-slate-800">Task information</h4>
+                <div className="mb-3 flex items-center justify-between">
+                    <h4 className="font-semibold text-slate-800">Cleanup tasks</h4>
 
-                {currentTask ? (
-                    <div className="rounded-xl border border-slate-200 p-4">
-                        <p className="font-semibold text-slate-900">
-                            {currentTask.report?.title || "Assigned cleanup task"}
-                        </p>
-                        <p className="mt-2 text-sm text-slate-500">
-                            {currentTask.report?.description ||
-                                currentTask.description ||
-                                "No task description available."}
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            <Badge tone="blue">{currentTask.status || "Assigned"}</Badge>
-                            {currentTask.report?.status && <Badge>{currentTask.report.status}</Badge>}
-                        </div>
+                    <Badge tone="blue">{cleanupTasks.length} Total</Badge>
+                </div>
+
+                {cleanupTasks.length > 0 ? (
+                    <div className="space-y-3">
+                        {cleanupTasks.map((task) => (
+                            <div key={task._id} className="rounded-xl border border-slate-200 bg-white p-4">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <h5 className="font-semibold text-slate-900">
+                                            {task.report?.description
+                                                ? task.report.description.slice(0, 90)
+                                                : "Assigned cleanup task"}
+                                        </h5>
+
+                                        <p className="mt-2 text-sm text-slate-500">
+                                            {task.report?.location?.address ||
+                                                task.report?.location?.city ||
+                                                "Location unavailable"}
+                                        </p>
+                                    </div>
+
+                                    <Badge tone={getStatusColor(task.status)}>{task.status || "Unknown"}</Badge>
+                                </div>
+
+                                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <DetailItem icon={Gift} label="Reward" value={formatNumber(task.reward?.amount)} />
+
+                                    <DetailItem
+                                        icon={CalendarDays}
+                                        label="Deadline"
+                                        value={
+                                            task.deadline
+                                                ? new Date(task.deadline).toLocaleDateString("en-IN")
+                                                : "Not specified"
+                                        }
+                                    />
+
+                                    <DetailItem
+                                        icon={AlertTriangle}
+                                        label="Report priority"
+                                        value={task.report?.priority || "Not available"}
+                                    />
+
+                                    <DetailItem
+                                        icon={MapPin}
+                                        label="Report status"
+                                        value={task.report?.status || "Not available"}
+                                    />
+                                </div>
+
+                                {task.guideline && (
+                                    <div className="mt-4 rounded-lg bg-slate-50 p-3">
+                                        <p className="text-xs font-semibold text-slate-600">Cleanup guidelines</p>
+
+                                        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-500">
+                                            {task.guideline}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <p className="mt-3 break-all text-[10px] text-slate-400">Task ID: {task._id}</p>
+                            </div>
+                        ))}
                     </div>
                 ) : (
                     <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center">
                         <ClipboardList size={24} className="mx-auto text-slate-300" />
-                        <p className="mt-2 text-sm font-medium text-slate-600">No current task assigned</p>
+
+                        <p className="mt-2 text-sm font-medium text-slate-600">No cleanup tasks assigned</p>
+
+                        <p className="mt-1 text-xs text-slate-400">
+                            This volunteer has not been assigned any cleanup tasks yet.
+                        </p>
                     </div>
                 )}
             </div>
         </div>
     );
 }
+
 
 export default function Rewards() {
     const [stats, setStats] = useState(null);

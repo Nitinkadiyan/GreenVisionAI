@@ -1,111 +1,153 @@
+import {Clock, FileText, Search, CheckCircle2, AlertCircle, ShieldCheck, Leaf} from "lucide-react";
 
-import { Check } from "lucide-react";
+export default function Timeline({report}) {
+    const status = report?.status || "Submitted";
 
-export default function Timeline({ report }) {
-  const steps = [
-    "Report Submitted",
-    "AI Analysis Completed",
-    "Accepted by Government",
-    "Cleanup Task Assigned",
-    "Volunteer Accepted",
-    "Cleanup In Progress",
-    "Completion Submitted",
-    "Government Review",
-    "Resolved",
-  ];
+    const submittedDate = report?.createdAt ? new Date(report.createdAt) : null;
 
-  // Map report statuses to the corresponding timeline step.
-  const statusToStep = {
-    "pending review": 0,
-    "accepted by government": 2,
-    "assigned cleanup": 3,
-    "cleanup task assigned": 3,
-    "volunteer accepted": 4,
-    "in progress": 5,
-    "cleanup in progress": 5,
-    "completion submitted": 6,
-    "government review": 7,
-    completed: 8,
-    resolved: 8,
-  };
+    const formatDate = (date) => {
+        if (!date || Number.isNaN(date.getTime())) {
+            return "Date unavailable";
+        }
 
-  const normalizedStatus = report?.status?.trim().toLowerCase();
+        return date.toLocaleString("en-IN", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
 
-  const currentStep =
-    statusToStep[normalizedStatus] ?? 0;
+    const stages = [
+        {
+            title: "Report Submitted",
+            description: "Your environmental report was successfully submitted.",
+            icon: FileText,
+            completed: true,
+            date: submittedDate,
+        },
+        {
+            title: "AI Analysis",
+            description: "The submitted image was analyzed by the AI system.",
+            icon: Search,
+            completed: Boolean(report?.aiAnalysis),
+            date: null,
+        },
+        {
+            title: "Under Review",
+            description: "The report is being reviewed by the concerned authority.",
+            icon: ShieldCheck,
+            completed: ["Under Review", "In Progress", "Resolved", "Completed"].includes(status),
+            date: null,
+        },
+        {
+            title: "Action in Progress",
+            description: "Action is being taken to address the reported issue.",
+            icon: Leaf,
+            completed: ["In Progress", "Resolved", "Completed"].includes(status),
+            date: null,
+        },
+        {
+            title: "Issue Resolved",
+            description: "The reported environmental issue has been resolved.",
+            icon: CheckCircle2,
+            completed: ["Resolved", "Completed"].includes(status),
+            date: null,
+        },
+    ];
 
-  // A report is fully completed only when its status is resolved/completed.
-  const isCompleted = currentStep === 8;
+    const currentStageIndex = stages.findLastIndex((stage) => stage.completed);
 
-  return (
-    <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-      <h3 className="font-bold text-slate-900">
-        Government Response
-      </h3>
+    return (
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h3 className="text-lg font-bold text-slate-900">Report Timeline</h3>
 
-      {!report && (
-        <p className="mt-4 text-sm text-slate-500">
-          No report information available.
-        </p>
-      )}
-
-      {report && (
-        <div className="mt-5 space-y-0">
-          {steps.map((step, index) => {
-            const isStepCompleted =
-              isCompleted || index <= currentStep;
-
-            const isCurrentStep =
-              !isCompleted && index === currentStep;
-
-            return (
-              <div key={step} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <span
-                    className={`grid h-6 w-6 place-items-center rounded-full ${
-                      isStepCompleted
-                        ? "bg-emerald-600 text-white"
-                        : "bg-slate-100 text-slate-400"
-                    }`}
-                  >
-                    {isStepCompleted ? (
-                      <Check size={13} />
-                    ) : (
-                      <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-                    )}
-                  </span>
-
-                  {index < steps.length - 1 && (
-                    <span
-                      className={`h-6 w-px ${
-                        index < currentStep
-                          ? "bg-emerald-200"
-                          : "bg-slate-200"
-                      }`}
-                    />
-                  )}
+                    <p className="mt-1 text-xs text-slate-500">Track the progress of your report</p>
                 </div>
 
-                <p
-                  className={`pb-2 text-sm ${
-                    isStepCompleted
-                      ? "font-semibold text-slate-700"
-                      : "text-slate-400"
-                  }`}
-                >
-                  {step}
+                <div className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-50 text-emerald-600">
+                    <Clock size={21} />
+                </div>
+            </div>
 
-                  {isCurrentStep && (
-                    <span className="ml-2 text-xs font-medium text-emerald-600">
-                      Current
-                    </span>
-                  )}
-                </p>
-              </div>
-            );
-          })}
+            {/* Current Status */}
+            <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Current Report Status</p>
+
+                <div className="mt-2 flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                    <span className="text-base font-bold text-emerald-800">{status}</span>
+                </div>
+            </div>
+
+            {/* Timeline */}
+            <div className="mt-7">
+                {stages.map((stage, index) => {
+                    const Icon = stage.icon;
+                    const isCurrent = index === currentStageIndex;
+                    const isCompleted = stage.completed;
+
+                    return (
+                        <div key={stage.title} className="relative flex gap-4">
+                            {/* Vertical Line */}
+                            {index !== stages.length - 1 && (
+                                <div
+                                    className={`absolute left-[17px] top-10 h-[calc(100%-8px)] w-0.5 ${
+                                        index < currentStageIndex ? "bg-emerald-400" : "bg-slate-200"
+                                    }`}
+                                />
+                            )}
+
+                            {/* Icon */}
+                            <div
+                                className={`relative z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 transition ${
+                                    isCompleted
+                                        ? "border-emerald-500 bg-emerald-500 text-white"
+                                        : "border-slate-200 bg-white text-slate-400"
+                                }`}
+                            >
+                                <Icon size={16} />
+                            </div>
+
+                            {/* Content */}
+                            <div className="min-w-0 flex-1 pb-8">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <h4
+                                        className={`text-sm font-bold ${
+                                            isCompleted ? "text-slate-900" : "text-slate-400"
+                                        }`}
+                                    >
+                                        {stage.title}
+                                    </h4>
+
+                                    {isCurrent && (
+                                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                                            CURRENT
+                                        </span>
+                                    )}
+                                </div>
+
+                                <p className="mt-1 text-xs leading-5 text-slate-500">{stage.description}</p>
+
+                                {stage.date && (
+                                    <p className="mt-2 text-[11px] font-medium text-emerald-700">
+                                        {formatDate(stage.date)}
+                                    </p>
+                                )}
+
+                                {!isCompleted && <p className="mt-2 text-[11px] text-slate-400">Pending</p>}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            
+           
         </div>
-      )}
-    </div>
-  );
+    );
 }

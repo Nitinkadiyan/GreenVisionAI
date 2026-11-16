@@ -42,8 +42,8 @@ const volunteerProfileSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ["available", "working", "under-review"],
-            default: "available",
+            enum: ["Available", "Working", "Under-Review"],
+            default: "Available",
         },
     },
     {
